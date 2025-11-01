@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 
 class CreateAccountViewModel : ViewModel() {
 
@@ -27,8 +28,12 @@ class CreateAccountViewModel : ViewModel() {
 
     fun onAction(action: CreateAccountAction) {
         when (action) {
-            else -> TODO("Handle actions")
+            is CreateAccountAction.OnNameChange -> _state.update { it.copy(name = action.name) }
+            is CreateAccountAction.OnEmailChange -> _state.update { it.copy(email = action.email) }
+            is CreateAccountAction.OnPasswordChange -> _state.update { it.copy(password = action.password) }
+            is CreateAccountAction.OnConfirmPasswordChange -> _state.update { it.copy(confirmPassword = action.confirmPassword) }
+            CreateAccountAction.OnCreateAccountClick -> { /* TODO: Handle create account logic */ }
+            CreateAccountAction.OnSignInClick -> { /* TODO: Handle navigation to Sign In */ }
         }
     }
-
 }

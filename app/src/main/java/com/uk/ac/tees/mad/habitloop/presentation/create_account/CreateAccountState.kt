@@ -1,6 +1,8 @@
 package com.uk.ac.tees.mad.habitloop.presentation.create_account
 
 data class CreateAccountState(
-    val paramOne: String = "default",
-    val paramTwo: List<String> = emptyList(),
+    val name: String = "",
+    val email: String = "",
+    val password: String = "",
+    val confirmPassword: String = ""
 )
