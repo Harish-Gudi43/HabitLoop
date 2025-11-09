@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "218077612543",
+    "project_id": "habitloop1",
+    "storage_bucket": "habitloop1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:218077612543:android:618223d44ef47882647fca",
+        "android_client_info": {
+          "package_name": "com.uk.ac.tees.mad.habitloop"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCCTp66PB6yUTLCEDu9uCo1xdYgKCKvMvI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
