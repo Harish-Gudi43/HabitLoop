@@ -1,4 +1,4 @@
-package com.uk.ac.tees.mad.habitloop.presentation.forgot
+package com.uk.ac.tees.mad.habitloop.presentation.auth.forgot
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -15,21 +15,11 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Email
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -41,19 +31,33 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.uk.ac.tees.mad.habitloop.R
 import com.uk.ac.tees.mad.habitloop.ui.theme.HabitLoopTheme
+import kotlinx.coroutines.launch
+import org.koin.androidx.compose.koinViewModel
+import uk.ac.tees.mad.bookly.domain.util.ObserveAsEvents
 
 @Composable
 fun ForgotRoot(
-    viewModel: ForgotViewModel = viewModel()
+    viewModel: ForgotViewModel = koinViewModel(),
+    onBackToLogin: () -> Unit
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    ObserveAsEvents(viewModel.events) { event ->
+        when (event) {
+            is ForgotEvent.Success -> scope.launch { snackbarHostState.showSnackbar("Password reset link sent") }
+            is ForgotEvent.Failure -> scope.launch { snackbarHostState.showSnackbar("Failed to send reset link") }
+            is ForgotEvent.GoToLogin -> onBackToLogin()
+        }
+    }
 
     ForgotScreen(
         state = state,
-        onAction = viewModel::onAction
+        onAction = viewModel::onAction,
+        snackbarHostState = snackbarHostState
     )
 }
 
@@ -62,6 +66,8 @@ fun ForgotRoot(
 fun ForgotScreen(
     state: ForgotState,
     onAction: (ForgotAction) -> Unit,
+    modifier: Modifier = Modifier,
+    snackbarHostState: SnackbarHostState? = null
 ) {
     Scaffold(
         topBar = {
@@ -77,10 +83,11 @@ fun ForgotScreen(
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
-        }
+        },
+        snackbarHost = { snackbarHostState?.let { SnackbarHost(it) } }
     ) { paddingValues ->
         Column(
-            modifier = Modifier
+            modifier = modifier
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(horizontal = 32.dp),
@@ -149,7 +156,11 @@ fun ForgotScreen(
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5DB09B)),
                 shape = RoundedCornerShape(8.dp)
             ) {
-                Text("Submit", fontSize = 16.sp, color = Color.White)
+                if (state.isLoading) {
+                    CircularProgressIndicator(color = Color.White)
+                } else {
+                    Text("Submit", fontSize = 16.sp, color = Color.White)
+                }
             }
 
             TextButton(onClick = { onAction(ForgotAction.OnBackToLoginClick) }) {

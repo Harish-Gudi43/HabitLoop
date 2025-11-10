@@ -1,21 +1,21 @@
-package com.uk.ac.tees.mad.habitloop.presentation.create_account
+package com.uk.ac.tees.mad.habitloop.presentation.auth.create_account
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -31,31 +31,50 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.uk.ac.tees.mad.habitloop.R
 import com.uk.ac.tees.mad.habitloop.ui.theme.HabitLoopTheme
+import kotlinx.coroutines.launch
+import org.koin.androidx.compose.koinViewModel
+import uk.ac.tees.mad.bookly.domain.util.ObserveAsEvents
 
 @Composable
 fun CreateAccountRoot(
-    viewModel: CreateAccountViewModel = viewModel()
+    viewModel: CreateAccountViewModel = koinViewModel(),
+    onSignInClick: () -> Unit,
+    onCreateAccountSuccess: () -> Unit
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
-    CreateAccountScreen(
-        state = state,
-        onAction = viewModel::onAction
-    )
+    ObserveAsEvents(viewModel.events) { event ->
+        when (event) {
+            is CreateAccountEvent.Success -> onCreateAccountSuccess()
+            is CreateAccountEvent.Failure -> scope.launch { snackbarHostState.showSnackbar("Failed to create account") }
+            is CreateAccountEvent.GoToLogin -> onSignInClick()
+        }
+    }
+
+    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) {
+        CreateAccountScreen(
+            state = state,
+            onAction = viewModel::onAction,
+            modifier = Modifier.padding(it)
+        )
+    }
 }
 
 @Composable
 fun CreateAccountScreen(
     state: CreateAccountState,
     onAction: (CreateAccountAction) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 32.dp),
+            .padding(horizontal = 32.dp)
+            .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -171,7 +190,11 @@ fun CreateAccountScreen(
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5DB09B)),
             shape = RoundedCornerShape(8.dp)
         ) {
-            Text("Create Account", fontSize = 16.sp, color = Color.White)
+             if (state.isLoading) {
+                CircularProgressIndicator(color = Color.White)
+            } else {
+                Text("Create Account", fontSize = 16.sp, color = Color.White)
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))

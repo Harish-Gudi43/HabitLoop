@@ -1,4 +1,4 @@
-package com.uk.ac.tees.mad.habitloop.presentation.create_account
+package com.uk.ac.tees.mad.habitloop.presentation.auth.create_account
 
 sealed interface CreateAccountAction {
     data class OnNameChange(val name: String) : CreateAccountAction

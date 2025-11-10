@@ -1,4 +1,4 @@
-package com.uk.ac.tees.mad.habitloop.presentation.login
+package com.uk.ac.tees.mad.habitloop.presentation.auth.login
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -8,11 +8,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -22,29 +26,86 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.uk.ac.tees.mad.habitloop.R
+import com.uk.ac.tees.mad.habitloop.domain.util.BiometricAuthStatus
+import com.uk.ac.tees.mad.habitloop.domain.util.BiometricAuthenticator
 import com.uk.ac.tees.mad.habitloop.ui.theme.HabitLoopTheme
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun LoginRoot(
-    viewModel: LoginViewModel = viewModel()
+    viewModel: LoginViewModel = koinViewModel(),
+    onLoginSuccess: () -> Unit,
+    onGoToCreateAccount: () -> Unit,
+    onGoToForgotPassword: () -> Unit
 ) {
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val biometricAuthenticator = remember { BiometricAuthenticator(context) }
+
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    LoginScreen(
-        state = state,
-        onAction = viewModel::onAction
-    )
+    LaunchedEffect(key1 = Unit) {
+        viewModel.events.collectLatest { event ->
+            when (event) {
+                is LoginEvent.Failure -> {
+                    scope.launch {
+                        snackbarHostState.showSnackbar("Login Failed")
+                    }
+                }
+                is LoginEvent.Success -> onLoginSuccess()
+                is LoginEvent.GoToCreateAccount -> onGoToCreateAccount()
+                is LoginEvent.GoToForgotPassword -> onGoToForgotPassword()
+                is LoginEvent.ShowBiometricPrompt -> {
+                    val status = biometricAuthenticator.isBiometricAuthAvailable()
+                    if (status == BiometricAuthStatus.READY) {
+                        biometricAuthenticator.promptBiometricAuth(
+                            title = "Login",
+                            subtitle = "Use your fingerprint to log in",
+                            negativeButtonText = "Cancel",
+                            onSuccess = { onLoginSuccess() },
+                            onFailure = { scope.launch { snackbarHostState.showSnackbar("Biometric authentication failed.") } },
+                            onError = { _, _ -> scope.launch { snackbarHostState.showSnackbar("An error occurred during biometric authentication.") } }
+                        )
+                    } else {
+                        scope.launch {
+                            val message = when(status) {
+                                BiometricAuthStatus.NOT_AVAILABLE -> "Biometric authentication is not available on this device."
+                                BiometricAuthStatus.TEMPORARILY_UNAVAILABLE -> "Biometric hardware is temporarily unavailable."
+                                BiometricAuthStatus.AVAILABLE_BUT_NOT_ENROLLED -> "No biometrics enrolled. Please set up a fingerprint or screen lock in your device's settings."
+                                else -> "An unknown error occurred with biometric authentication."
+                            }
+                            snackbarHostState.showSnackbar(message)
+                        }
+                    }
+                }
+                else -> {}
+            }
+        }
+    }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { padding ->
+        LoginScreen(
+            modifier = Modifier.padding(padding),
+            state = state,
+            onAction = viewModel::onAction
+        )
+    }
 }
 
 @Composable
 fun LoginScreen(
     state: LoginState,
     onAction: (LoginAction) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .padding(horizontal = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -110,7 +171,11 @@ fun LoginScreen(
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5DB09B)),
             shape = RoundedCornerShape(8.dp)
         ) {
-            Text("Login", fontSize = 16.sp, color = Color.White)
+            if (state.isLoading) {
+                CircularProgressIndicator(color = Color.White)
+            } else {
+                Text("Login", fontSize = 16.sp, color = Color.White)
+            }
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -121,7 +186,7 @@ fun LoginScreen(
                 .fillMaxWidth()
                 .height(50.dp),
             shape = RoundedCornerShape(8.dp),
-            border = ButtonDefaults.outlinedButtonBorder.copy(brush = SolidColor(Color(0xFF5DB09B)))
+            border = ButtonDefaults.outlinedButtonBorder(enabled = true).copy(brush = SolidColor(Color(0xFF5DB09B)))
         ) {
             Text("Create Account", color = Color.DarkGray, fontSize = 16.sp)
         }
