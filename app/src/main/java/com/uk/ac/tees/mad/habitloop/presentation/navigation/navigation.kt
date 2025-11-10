@@ -8,18 +8,19 @@ import com.google.firebase.auth.FirebaseAuth
 import com.uk.ac.tees.mad.habitloop.presentation.auth.create_account.CreateAccountRoot
 import com.uk.ac.tees.mad.habitloop.presentation.auth.forgot.ForgotRoot
 import com.uk.ac.tees.mad.habitloop.presentation.auth.login.LoginRoot
+import com.uk.ac.tees.mad.habitloop.presentation.dashboard.DashboardRoot
 import com.uk.ac.tees.mad.habitloop.presentation.home.HomeRoot
 
 @Composable
 fun Navigation(navcontroller: NavHostController){
-    val startDestination = if (FirebaseAuth.getInstance().currentUser != null) GraphRoutes.Home else GraphRoutes.Login
+    val startDestination = if (FirebaseAuth.getInstance().currentUser != null) GraphRoutes.DashBoard else GraphRoutes.Login
 
     NavHost(navController = navcontroller, startDestination = startDestination){
 
         composable<GraphRoutes.Login>{
          LoginRoot(
              onLoginSuccess = {
-                 navcontroller.navigate(GraphRoutes.Home){
+                 navcontroller.navigate(GraphRoutes.DashBoard){
                      popUpTo(GraphRoutes.Login){
                          inclusive = true
                      }
@@ -38,7 +39,7 @@ fun Navigation(navcontroller: NavHostController){
                     }
                 },
                 onCreateAccountSuccess = {
-                    navcontroller.navigate(GraphRoutes.Home) {
+                    navcontroller.navigate(GraphRoutes.DashBoard) {
                         popUpTo(GraphRoutes.Register) { inclusive = true }
                     }
                 }
@@ -55,14 +56,8 @@ fun Navigation(navcontroller: NavHostController){
             )
         }
 
-        composable<GraphRoutes.Home>{
-            HomeRoot(
-                onLogout = {
-                    navcontroller.navigate(GraphRoutes.Login) {
-                        popUpTo(GraphRoutes.Home) { inclusive = true }
-                    }
-                }
-            )
+        composable<GraphRoutes.DashBoard>{
+            DashboardRoot()
         }
 
     }

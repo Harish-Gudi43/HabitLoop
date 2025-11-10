@@ -8,7 +8,7 @@ sealed class GraphRoutes {
     @Serializable
     data object Register : GraphRoutes()
     @Serializable
-    data object Home : GraphRoutes()
+    data object DashBoard : GraphRoutes()
     @Serializable
     data object Forgot : GraphRoutes()
 }
