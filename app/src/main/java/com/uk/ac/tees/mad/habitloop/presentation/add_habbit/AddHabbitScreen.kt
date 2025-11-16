@@ -2,35 +2,32 @@ package com.uk.ac.tees.mad.habitloop.presentation.add_habbit
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
+import com.uk.ac.tees.mad.habitloop.presentation.common.BottomNavigationBar
 import com.uk.ac.tees.mad.habitloop.ui.theme.HabitLoopTheme
 
 @Composable
 fun AddHabbitRoot(
-    viewModel: AddHabbitViewModel = viewModel()
+    viewModel: AddHabbitViewModel = viewModel(),
+    navController: NavHostController
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     AddHabbitScreen(
         state = state,
-        onAction = viewModel::onAction
+        onAction = viewModel::onAction,
+        navController = navController
     )
 }
 
@@ -39,6 +36,7 @@ fun AddHabbitRoot(
 fun AddHabbitScreen(
     state: AddHabbitState,
     onAction: (AddHabbitAction) -> Unit,
+    navController: NavHostController
 ) {
     Scaffold(
         topBar = {
@@ -61,7 +59,7 @@ fun AddHabbitScreen(
                 ) {
                     Text("Save Habit", style = MaterialTheme.typography.titleMedium)
                 }
-                BottomNavigationBar()
+                BottomNavigationBar(selectedTitle = "Add Habit", navController = navController)
             }
         }
     ) { paddingValues ->
@@ -164,39 +162,5 @@ fun ChipGroup(
                 shape = RoundedCornerShape(16.dp)
             )
         }
-    }
-}
-
-@Composable
-fun BottomNavigationBar() {
-    val items = listOf(
-        BottomNavItem("Dashboard", Icons.Default.Home),
-        BottomNavItem("Add Habit", Icons.Default.Add),
-        BottomNavItem("Profile", Icons.Default.Person),
-        BottomNavItem("Settings", Icons.Default.Settings),
-        BottomNavItem("Notifications", Icons.Default.Notifications)
-    )
-    NavigationBar {
-        items.forEach { item ->
-            NavigationBarItem(
-                icon = { Icon(imageVector = item.icon, contentDescription = item.title) },
-                label = { Text(item.title) },
-                selected = item.title == "Add Habit",
-                onClick = { /* TODO: Handle navigation */ }
-            )
-        }
-    }
-}
-
-data class BottomNavItem(val title: String, val icon: ImageVector)
-
-@Preview(showBackground = true)
-@Composable
-private fun Preview() {
-    HabitLoopTheme {
-        AddHabbitScreen(
-            state = AddHabbitState(habitTitle = "Meditate daily"),
-            onAction = {}
-        )
     }
 }

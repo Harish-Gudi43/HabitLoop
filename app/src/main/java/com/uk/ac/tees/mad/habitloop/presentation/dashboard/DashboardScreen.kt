@@ -32,18 +32,22 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
 import com.uk.ac.tees.mad.habitloop.R
+import com.uk.ac.tees.mad.habitloop.presentation.common.BottomNavigationBar
 import com.uk.ac.tees.mad.habitloop.ui.theme.HabitLoopTheme
 
 @Composable
 fun DashboardRoot(
-    viewModel: DashboardViewModel = viewModel()
+    viewModel: DashboardViewModel = viewModel(),
+    navController: NavHostController
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     DashboardScreen(
         state = state,
-        onAction = viewModel::onAction
+        onAction = viewModel::onAction,
+        navController = navController
     )
 }
 
@@ -52,6 +56,7 @@ fun DashboardRoot(
 fun DashboardScreen(
     state: DashboardState,
     onAction: (DashboardAction) -> Unit,
+    navController: NavHostController
 ) {
     Scaffold(
         topBar = {
@@ -80,7 +85,7 @@ fun DashboardScreen(
             )
         },
         bottomBar = {
-            BottomNavigationBar()
+            BottomNavigationBar(selectedTitle = "Dashboard", navController = navController)
         }
     ) { paddingValues ->
         Column(
@@ -280,63 +285,3 @@ fun HabitListItem(habit: Habit, onAction: (DashboardAction) -> Unit) {
     }
 }
 
-
-@Composable
-fun BottomNavigationBar() {
-    val items = listOf(
-        BottomNavItem("Dashboard", Icons.Default.Home),
-        BottomNavItem("Add Habit", Icons.Default.Add),
-        BottomNavItem("Profile", Icons.Default.Person),
-        BottomNavItem("Settings", Icons.Default.Settings),
-        BottomNavItem("Notifications", Icons.Default.Notifications)
-    )
-    NavigationBar {
-        items.forEach { item ->
-            NavigationBarItem(
-                icon = { Icon(imageVector = item.icon, contentDescription = item.title) },
-                label = { Text(item.title) },
-                selected = item.title == "Dashboard",
-                onClick = { /* TODO: Handle navigation */ }
-            )
-        }
-    }
-}
-
-data class BottomNavItem(val title: String, val icon: ImageVector)
-
-
-@Preview(showBackground = true, name = "List View Preview")
-@Composable
-private fun PreviewListView() {
-    HabitLoopTheme {
-        DashboardScreen(
-            state = DashboardState(
-                isGridView = false, // Explicitly set to list view for this preview
-                habits = listOf(
-                    Habit("1", "Morning Run", true, 15, "6:00 AM"),
-                    Habit("2", "Read Book", false, 7, "9:00 PM"),
-                )
-            ),
-            onAction = {}
-        )
-    }
-}
-
-@Preview(showBackground = true, name = "Grid View Preview")
-@Composable
-private fun PreviewGridView() {
-    HabitLoopTheme {
-        DashboardScreen(
-            state = DashboardState(
-                isGridView = true, // Explicitly set to grid view for this preview
-                habits = listOf(
-                    Habit("1", "Morning Run", true, 15, "6:00 AM"),
-                    Habit("2", "Read Book", false, 7, "9:00 PM"),
-                    Habit("3", "Drink Water", true, 30, "2:00 PM"),
-                    Habit("4", "Meditate", false, 3, "7:00 AM"),
-                )
-            ),
-            onAction = {}
-        )
-    }
-}

@@ -1,7 +1,6 @@
 package com.uk.ac.tees.mad.habitloop.presentation.navigation
 
 import kotlinx.serialization.Serializable
-
 sealed class GraphRoutes {
     @Serializable
     data object Login : GraphRoutes()
@@ -11,4 +10,12 @@ sealed class GraphRoutes {
     data object DashBoard : GraphRoutes()
     @Serializable
     data object Forgot : GraphRoutes()
+    @Serializable
+    data object AddHabbit : GraphRoutes()
+    @Serializable
+    data object Profile : GraphRoutes()
+    @Serializable
+    data object Settings : GraphRoutes()
+    @Serializable
+    data object Notifications : GraphRoutes()
 }

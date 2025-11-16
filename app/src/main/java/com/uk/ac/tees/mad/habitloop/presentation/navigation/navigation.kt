@@ -1,15 +1,17 @@
 package com.uk.ac.tees.mad.habitloop.presentation.navigation
 
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.google.firebase.auth.FirebaseAuth
+import com.uk.ac.tees.mad.habitloop.presentation.add_habbit.AddHabbitRoot
 import com.uk.ac.tees.mad.habitloop.presentation.auth.create_account.CreateAccountRoot
 import com.uk.ac.tees.mad.habitloop.presentation.auth.forgot.ForgotRoot
 import com.uk.ac.tees.mad.habitloop.presentation.auth.login.LoginRoot
 import com.uk.ac.tees.mad.habitloop.presentation.dashboard.DashboardRoot
-import com.uk.ac.tees.mad.habitloop.presentation.home.HomeRoot
+import kotlinx.serialization.Serializable
 
 @Composable
 fun Navigation(navcontroller: NavHostController){
@@ -57,9 +59,18 @@ fun Navigation(navcontroller: NavHostController){
         }
 
         composable<GraphRoutes.DashBoard>{
-            DashboardRoot()
+            DashboardRoot(navController = navcontroller)
         }
+
+        composable<GraphRoutes.AddHabbit>{
+            AddHabbitRoot(navController = navcontroller)
+        }
+
+        composable<GraphRoutes.Profile> { Text(text = "Profile Screen") }
+        composable<GraphRoutes.Settings> { Text(text = "Settings Screen") }
+        composable<GraphRoutes.Notifications> { Text(text = "Notifications Screen") }
 
     }
 
 }
+
