@@ -38,6 +38,15 @@ fun AddHabbitScreen(
     onAction: (AddHabbitAction) -> Unit,
     navController: NavHostController
 ) {
+    if (state.isCustomFrequencyDialogVisible) {
+        CustomFrequencyDialog(
+            days = state.customFrequencyDays,
+            selectedDays = state.selectedCustomFrequencyDays,
+            onDaySelected = { day -> onAction(AddHabbitAction.OnCustomFrequencyDaySelected(day)) },
+            onDismiss = { onAction(AddHabbitAction.OnCustomFrequencyDialogDismiss) }
+        )
+    }
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -95,7 +104,13 @@ fun AddHabbitScreen(
                 ChipGroup(
                     items = state.frequencies,
                     selectedItem = state.selectedFrequency,
-                    onItemSelected = { onAction(AddHabbitAction.OnFrequencyChange(it)) }
+                    onItemSelected = { frequency ->
+                        if (frequency == "Custom") {
+                            onAction(AddHabbitAction.OnCustomFrequencyClick)
+                        } else {
+                            onAction(AddHabbitAction.OnFrequencyChange(frequency))
+                        }
+                    }
                 )
             }
 
@@ -162,5 +177,49 @@ fun ChipGroup(
                 shape = RoundedCornerShape(16.dp)
             )
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CustomFrequencyDialog(
+    days: List<String>,
+    selectedDays: List<String>,
+    onDaySelected: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Select Days") },
+        text = {
+            Column {
+                days.forEach { day ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(
+                            checked = selectedDays.contains(day),
+                            onCheckedChange = { onDaySelected(day) }
+                        )
+                        Text(day)
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = onDismiss) {
+                Text("Done")
+            }
+        }
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun Preview() {
+    HabitLoopTheme {
+        AddHabbitScreen(
+            state = AddHabbitState(habitTitle = "Meditate daily"),
+            onAction = {},
+            navController = NavHostController(androidx.compose.ui.platform.LocalContext.current)
+        )
     }
 }

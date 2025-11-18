@@ -7,4 +7,7 @@ sealed interface AddHabbitAction {
     data class OnDescriptionChange(val description: String) : AddHabbitAction
     data class OnReminderToggle(val isEnabled: Boolean) : AddHabbitAction
     object OnSaveClick : AddHabbitAction
+    object OnCustomFrequencyClick : AddHabbitAction
+    object OnCustomFrequencyDialogDismiss : AddHabbitAction
+    data class OnCustomFrequencyDaySelected(val day: String) : AddHabbitAction
 }
