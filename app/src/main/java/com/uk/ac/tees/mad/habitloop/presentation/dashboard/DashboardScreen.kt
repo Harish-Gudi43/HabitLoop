@@ -24,6 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -31,15 +32,16 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.uk.ac.tees.mad.habitloop.R
+import com.uk.ac.tees.mad.habitloop.domain.models.Habit
 import com.uk.ac.tees.mad.habitloop.presentation.common.BottomNavigationBar
 import com.uk.ac.tees.mad.habitloop.ui.theme.HabitLoopTheme
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun DashboardRoot(
-    viewModel: DashboardViewModel = viewModel(),
+    viewModel: DashboardViewModel = koinViewModel(),
     navController: NavHostController
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -105,11 +107,19 @@ fun DashboardScreen(
                 onToggle = { isGridView -> onAction(DashboardAction.OnViewToggle(isGridView)) }
             )
 
-            // Conditionally display Grid or List
-            if (state.isGridView) {
-                HabitGrid(habits = state.habits, onAction = onAction)
+            if (state.habits.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("No habits yet. Add one to get started!")
+                }
             } else {
-                HabitList(habits = state.habits, onAction = onAction)
+                if (state.isGridView) {
+                    HabitGrid(habits = state.habits, onAction = onAction)
+                } else {
+                    HabitList(habits = state.habits, onAction = onAction)
+                }
             }
         }
     }
@@ -285,3 +295,40 @@ fun HabitListItem(habit: Habit, onAction: (DashboardAction) -> Unit) {
     }
 }
 
+@Preview(showBackground = true, name = "List View Preview")
+@Composable
+private fun PreviewListView() {
+    HabitLoopTheme {
+        DashboardScreen(
+            state = DashboardState(
+                isGridView = false, // Explicitly set to list view for this preview
+                habits = listOf(
+                    Habit("1", "Morning Run", "", "", "", false, null, true, 15, "6:00 AM"),
+                    Habit("2", "Read Book", "", "", "", false, null, false, 7, "9:00 PM"),
+                )
+            ),
+            onAction = {},
+            navController = NavHostController(LocalContext.current)
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Grid View Preview")
+@Composable
+private fun PreviewGridView() {
+    HabitLoopTheme {
+        DashboardScreen(
+            state = DashboardState(
+                isGridView = true, // Explicitly set to grid view for this preview
+                habits = listOf(
+                    Habit("1", "Morning Run", "", "", "", false, null, true, 15, "6:00 AM"),
+                    Habit("2", "Read Book", "", "", "", false, null, false, 7, "9:00 PM"),
+                    Habit("3", "Drink Water", "", "", "", false, null, true, 30, "2:00 PM"),
+                    Habit("4", "Meditate", "", "", "", false, null, false, 3, "7:00 AM"),
+                )
+            ),
+            onAction = {},
+            navController = NavHostController(LocalContext.current)
+        )
+    }
+}

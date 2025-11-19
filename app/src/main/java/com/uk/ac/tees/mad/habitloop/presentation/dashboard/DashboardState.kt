@@ -1,12 +1,6 @@
 package com.uk.ac.tees.mad.habitloop.presentation.dashboard
 
-data class Habit(
-    val id: String,
-    val name: String,
-    val isCompleted: Boolean,
-    val streak: Int,
-    val nextOccurrence: String
-)
+import com.uk.ac.tees.mad.habitloop.domain.models.Habit
 
 data class DashboardState(
     val userName: String = "Alex",

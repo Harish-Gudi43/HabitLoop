@@ -1,14 +1,26 @@
 package com.uk.ac.tees.mad.habitloop.presentation.add_habbit
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.uk.ac.tees.mad.habitloop.domain.HabitLoopRepository
+import com.uk.ac.tees.mad.habitloop.domain.models.Habit
+import com.uk.ac.tees.mad.habitloop.domain.util.NavigationEvent
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
-class AddHabbitViewModel : ViewModel() {
+class AddHabbitViewModel(
+    private val repository: HabitLoopRepository
+) : ViewModel() {
 
     private val _state = MutableStateFlow(AddHabbitState())
     val state = _state.asStateFlow()
+
+    private val _navigationEvent = Channel<NavigationEvent>()
+    val navigationEvent = _navigationEvent.receiveAsFlow()
 
     fun onAction(action: AddHabbitAction) {
         when (action) {
@@ -28,7 +40,7 @@ class AddHabbitViewModel : ViewModel() {
                 _state.update { it.copy(isReminderEnabled = action.isEnabled) }
             }
             is AddHabbitAction.OnSaveClick -> {
-                // TODO: Handle save
+                saveHabit()
             }
             is AddHabbitAction.OnCustomFrequencyClick -> {
                 _state.update { it.copy(isCustomFrequencyDialogVisible = true) }
@@ -47,6 +59,21 @@ class AddHabbitViewModel : ViewModel() {
                     currentState.copy(selectedCustomFrequencyDays = selectedDays)
                 }
             }
+        }
+    }
+
+    private fun saveHabit() {
+        viewModelScope.launch {
+            val habit = Habit(
+                name = state.value.habitTitle,
+                description = state.value.description,
+                category = state.value.selectedCategory,
+                frequency = state.value.selectedFrequency,
+                reminder = state.value.isReminderEnabled,
+                customFrequencyDays = if (state.value.selectedFrequency == "Custom") state.value.selectedCustomFrequencyDays else null
+            )
+            repository.insertHabit(habit)
+            _navigationEvent.send(NavigationEvent.NavigateBack)
         }
     }
 }

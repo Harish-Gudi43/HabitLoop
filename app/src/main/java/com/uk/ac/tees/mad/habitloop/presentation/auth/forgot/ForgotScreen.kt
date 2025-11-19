@@ -32,10 +32,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.uk.ac.tees.mad.habitloop.R
+import com.uk.ac.tees.mad.habitloop.domain.util.ObserveAsEvents
 import com.uk.ac.tees.mad.habitloop.ui.theme.HabitLoopTheme
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
-import uk.ac.tees.mad.bookly.domain.util.ObserveAsEvents
 
 @Composable
 fun ForgotRoot(

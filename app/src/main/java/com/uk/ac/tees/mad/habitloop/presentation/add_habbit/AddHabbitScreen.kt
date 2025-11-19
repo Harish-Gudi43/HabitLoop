@@ -8,21 +8,32 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import com.uk.ac.tees.mad.habitloop.domain.util.NavigationEvent
+import com.uk.ac.tees.mad.habitloop.domain.util.ObserveAsEvents
 import com.uk.ac.tees.mad.habitloop.presentation.common.BottomNavigationBar
 import com.uk.ac.tees.mad.habitloop.ui.theme.HabitLoopTheme
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun AddHabbitRoot(
-    viewModel: AddHabbitViewModel = viewModel(),
+    viewModel: AddHabbitViewModel = koinViewModel(),
     navController: NavHostController
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+
+    ObserveAsEvents(flow = viewModel.navigationEvent) {
+        when (it) {
+            is NavigationEvent.NavigateBack -> {
+                navController.popBackStack()
+            }
+        }
+    }
 
     AddHabbitScreen(
         state = state,
@@ -219,7 +230,7 @@ private fun Preview() {
         AddHabbitScreen(
             state = AddHabbitState(habitTitle = "Meditate daily"),
             onAction = {},
-            navController = NavHostController(androidx.compose.ui.platform.LocalContext.current)
+            navController = NavHostController(LocalContext.current)
         )
     }
 }

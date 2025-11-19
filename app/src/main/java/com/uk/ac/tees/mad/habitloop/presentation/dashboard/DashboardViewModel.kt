@@ -2,23 +2,27 @@ package com.uk.ac.tees.mad.habitloop.presentation.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.uk.ac.tees.mad.habitloop.domain.HabitLoopRepository
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import java.util.Calendar
 
-class DashboardViewModel : ViewModel() {
+class DashboardViewModel(
+    private val repository: HabitLoopRepository
+) : ViewModel() {
 
     private val _state = MutableStateFlow(DashboardState())
-    val state = _state
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000L),
-            initialValue = DashboardState()
-        )
+    val state = _state.asStateFlow()
 
     init {
-        loadInitialData()
+        viewModelScope.launch {
+            repository.getHabits().collectLatest { habits ->
+                _state.update { it.copy(habits = habits) }
+            }
+        }
     }
 
     fun onAction(action: DashboardAction) {
@@ -27,32 +31,39 @@ class DashboardViewModel : ViewModel() {
                 _state.update { it.copy(isGridView = action.isGridView) }
             }
             is DashboardAction.OnHabitClick -> {
-                _state.update { currentState ->
-                    val updatedHabits = currentState.habits.map { habit ->
-                        if (habit.id == action.habitId) {
-                            habit.copy(isCompleted = !habit.isCompleted)
+                viewModelScope.launch {
+                    val habit = state.value.habits.find { it.id == action.habitId } ?: return@launch
+                    val isCompleted = !habit.isCompleted
+                    val today = Calendar.getInstance()
+                    val lastCompleted = Calendar.getInstance().apply { timeInMillis = habit.lastCompletedDate }
+
+                    val newStreak = if (isCompleted) {
+                        if (!isSameDay(today, lastCompleted)) {
+                            habit.streak + 1
                         } else {
-                            habit
+                            habit.streak // Already completed today
+                        }
+                    } else {
+                        if (isSameDay(today, lastCompleted)) {
+                            habit.streak - 1
+                        } else {
+                            habit.streak // Not completed today, so streak doesn't change
                         }
                     }
-                    currentState.copy(habits = updatedHabits)
+
+                    val updatedHabit = habit.copy(
+                        isCompleted = isCompleted,
+                        streak = newStreak,
+                        lastCompletedDate = if (isCompleted) System.currentTimeMillis() else habit.lastCompletedDate
+                    )
+                    repository.updateHabit(updatedHabit)
                 }
             }
         }
     }
 
-    private fun loadInitialData() {
-        _state.update {
-            it.copy(
-                habits = listOf(
-                    Habit("1", "Morning Run", true, 15, "6:00 AM"),
-                    Habit("2", "Read Book", false, 7, "9:00 PM"),
-                    Habit("3", "Drink Water", true, 30, "2:00 PM"),
-                    Habit("4", "Meditate", false, 3, "7:00 AM"),
-                    Habit("5", "Learn React", true, 5, "5:00 PM"),
-                    Habit("6", "Call Mom", false, 1, "8:00 PM"),
-                )
-            )
-        }
+    private fun isSameDay(cal1: Calendar, cal2: Calendar): Boolean {
+        return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
+                cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR)
     }
 }
