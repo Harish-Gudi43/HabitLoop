@@ -10,4 +10,7 @@ sealed interface AddHabbitAction {
     object OnCustomFrequencyClick : AddHabbitAction
     object OnCustomFrequencyDialogDismiss : AddHabbitAction
     data class OnCustomFrequencyDaySelected(val day: String) : AddHabbitAction
+    object OnTimePickerClick : AddHabbitAction
+    object OnTimePickerDismiss : AddHabbitAction
+    data class OnTimeSelected(val hour: Int, val minute: Int) : AddHabbitAction
 }

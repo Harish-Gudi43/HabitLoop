@@ -3,22 +3,22 @@ package com.uk.ac.tees.mad.habitloop.data
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.uk.ac.tees.mad.habitloop.domain.AuthRepository
+import com.uk.ac.tees.mad.habitloop.domain.util.DataError
+import com.uk.ac.tees.mad.habitloop.domain.util.EmptyResult
+import com.uk.ac.tees.mad.habitloop.domain.util.firebaseResult
 import kotlinx.coroutines.tasks.await
-import uk.ac.tees.mad.bookly.domain.util.DataError
-import uk.ac.tees.mad.bookly.domain.util.EmptyResult
-import uk.ac.tees.mad.bookly.domain.util.firebaseResult
 
 class AuthRepositoryImpl(
     private val firebaseAuth: FirebaseAuth,
     private val firestore: FirebaseFirestore
-): AuthRepository {
+) : AuthRepository {
 
     override suspend fun signIn(
         email: String,
         password: String
     ): EmptyResult<DataError.Firebase> {
-       return firebaseResult {
-             firebaseAuth.signInWithEmailAndPassword(email, password).await()
+        return firebaseResult {
+            firebaseAuth.signInWithEmailAndPassword(email, password).await()
         }
     }
 
@@ -28,15 +28,15 @@ class AuthRepositoryImpl(
         name: String
     ): EmptyResult<DataError.Firebase> {
         return firebaseResult {
-           val result = firebaseAuth.createUserWithEmailAndPassword(email, password).await()
+            val result = firebaseAuth.createUserWithEmailAndPassword(email, password).await()
 
-          val user = result.user
+            val user = result.user
 
-            requireNotNull(user){
+            requireNotNull(user) {
                 "firebase user was null after successful registration"
             }
 
-            val userProfileData =mapOf(
+            val userProfileData = mapOf(
                 "name" to name,
                 "email" to email,
                 "uid" to user.uid,
@@ -44,10 +44,6 @@ class AuthRepositoryImpl(
             )
 
             firestore.collection("users").document(user.uid).set(userProfileData).await()
-
-
-
-
         }
     }
 

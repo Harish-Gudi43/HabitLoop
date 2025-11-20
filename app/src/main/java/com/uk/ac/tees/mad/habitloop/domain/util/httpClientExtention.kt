@@ -1,159 +1,79 @@
-package uk.ac.tees.mad.bookly.domain.util
-
+package com.uk.ac.tees.mad.habitloop.domain.util
 
 import io.ktor.client.HttpClient
-import io.ktor.client.call.NoTransformationFoundException
 import io.ktor.client.call.body
-import io.ktor.client.network.sockets.SocketTimeoutException
-import io.ktor.client.plugins.HttpRequestTimeoutException
-import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
-import io.ktor.client.request.parameter
+import io.ktor.client.request.patch
 import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
-import io.ktor.client.request.url
 import io.ktor.client.statement.HttpResponse
-import io.ktor.util.network.UnresolvedAddressException
-import kotlinx.coroutines.ensureActive
-import kotlinx.serialization.SerializationException
-import java.net.ConnectException
-import java.net.UnknownHostException
-import kotlin.coroutines.coroutineContext
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
 
 
-suspend fun <T> platformSafeCall(
-    execute: suspend () -> HttpResponse,
-    handleResponse: suspend (HttpResponse) -> Result<T, DataError.Remote>
-): Result<T, DataError.Remote> {
+suspend inline fun <reified T, reified E> HttpClient.safeRequest(
+    crossinline block: suspend (HttpClient) -> HttpResponse
+): HttpResult<T, E> {
     return try {
-        val response = execute()
-        handleResponse(response)
-    } catch(e: UnknownHostException) {
-        Result.Failure(DataError.Remote.NO_INTERNET)
-    } catch(e: UnresolvedAddressException) {
-        Result.Failure(DataError.Remote.NO_INTERNET)
-    } catch(e: ConnectException) {
-        Result.Failure(DataError.Remote.NO_INTERNET)
-    } catch(e: SocketTimeoutException) {
-        Result.Failure(DataError.Remote.REQUEST_TIMEOUT)
-    } catch(e: HttpRequestTimeoutException) {
-        Result.Failure(DataError.Remote.REQUEST_TIMEOUT)
-    } catch(e: SerializationException) {
-        Result.Failure(DataError.Remote.SERIALIZATION)
+        val response = block(this)
+        HttpResult.Success(response.body())
     } catch (e: Exception) {
-        coroutineContext.ensureActive()
-        Result.Failure(DataError.Remote.UNKNOWN)
+        HttpResult.Failure(e as E)
     }
 }
 
+suspend inline fun <reified T> HttpClient.get(
+    route: String
+): T = safeRequest<T, DataError.Remote> {
+    it.get(route)
+}.getOrNull()!!
 
-suspend inline fun <reified Request, reified Response: Any> HttpClient.post(
+suspend inline fun <reified T> HttpClient.post(
     route: String,
-    body: Request,
-    queryParams: Map<String, Any> = mapOf(),
-    crossinline builder: HttpRequestBuilder.() -> Unit = {}
-): Result<Response, DataError.Remote> {
-    return safeCall {
-        post {
-            url(route)
-            queryParams.forEach { (key, value) ->
-                parameter(key, value)
-            }
-            setBody(body)
-            builder()
-        }
+    body: Any? = null
+): T = safeRequest<T, DataError.Remote> {
+    it.post(route) {
+        contentType(ContentType.Application.Json)
+        body?.let { setBody(it) }
     }
-}
-suspend inline fun < reified Response: Any> HttpClient.get(
+}.getOrNull()!!
+
+suspend inline fun <reified T> HttpClient.put(
     route: String,
-    queryParams: Map<String, Any> = mapOf(),
-    crossinline builder: HttpRequestBuilder.() -> Unit = {}
-): Result<Response, DataError.Remote> {
-    return safeCall {
-        get {
-            url(route)
-            queryParams.forEach { (key, value) ->
-                parameter(key, value)
-            }
-            builder()
-        }
+    body: Any? = null
+): T = safeRequest<T, DataError.Remote> {
+    it.put(route) {
+        contentType(ContentType.Application.Json)
+        body?.let { setBody(it) }
     }
-}
-suspend inline fun <reified Request, reified Response: Any> HttpClient.put(
+}.getOrNull()!!
+
+suspend inline fun <reified T> HttpClient.patch(
     route: String,
-    queryParams: Map<String, Any> = mapOf(),
-    body: Request,
-    crossinline builder: HttpRequestBuilder.() -> Unit = {}
-): Result<Response, DataError.Remote> {
-    return safeCall {
-        put {
-            url(route)
-            queryParams.forEach { (key, value) ->
-                parameter(key, value)
-            }
-            setBody(body)
-            builder()
-        }
+    body: Any? = null
+): T = safeRequest<T, DataError.Remote> {
+    it.patch(route) {
+        contentType(ContentType.Application.Json)
+        body?.let { setBody(it) }
     }
-}
+}.getOrNull()!!
 
-suspend inline fun < reified Response: Any> HttpClient.delete(
+suspend inline fun <reified T> HttpClient.delete(
     route: String,
-    queryParams: Map<String, Any> = mapOf(),
-    crossinline builder: HttpRequestBuilder.() -> Unit = {}
-): Result<Response, DataError.Remote> {
-    return safeCall {
-        delete {
-            url(route)
-            queryParams.forEach { (key, value) ->
-                parameter(key, value)
-            }
-            builder()
-        }
+    body: Any? = null
+): T = safeRequest<T, DataError.Remote> {
+    it.delete(route) {
+        contentType(ContentType.Application.Json)
+        body?.let { setBody(it) }
+    }
+}.getOrNull()!!
+
+fun <T, E> HttpResult<T, E>.getOrNull(): T? {
+    return when (this) {
+        is HttpResult.Success -> data
+        is HttpResult.Failure -> null
     }
 }
 
-
-suspend inline fun <reified T> safeCall(
-    noinline execute: suspend () -> HttpResponse
-): Result<T, DataError.Remote> {
-    return platformSafeCall(
-        execute = execute
-    ) { response ->
-        responseToResult(response)
-    }
-}
-
-suspend inline fun <reified T> responseToResult(response: HttpResponse): Result<T, DataError.Remote> {
-    return when(response.status.value) {
-        in 200..299 -> {
-            try {
-
-                Result.Success(response.body<T>())
-            } catch(e: NoTransformationFoundException) {
-                Result.Failure(DataError.Remote.SERIALIZATION)
-            }
-        }
-        400 -> Result.Failure(DataError.Remote.BAD_REQUEST)
-        401 -> Result.Failure(DataError.Remote.UNAUTHORIZED)
-        403 -> Result.Failure(DataError.Remote.FORBIDDEN)
-        404 -> Result.Failure(DataError.Remote.NOT_FOUND)
-        408 -> Result.Failure(DataError.Remote.REQUEST_TIMEOUT)
-        409 -> Result.Failure(DataError.Remote.CONFLICT)
-        413 -> Result.Failure(DataError.Remote.PAYLOAD_TOO_LARGE)
-        429 -> Result.Failure(DataError.Remote.TOO_MANY_REQUESTS)
-        500 -> Result.Failure(DataError.Remote.SERVER_ERROR)
-        503 -> Result.Failure(DataError.Remote.SERVICE_UNAVAILABLE)
-        else -> Result.Failure(DataError.Remote.UNKNOWN)
-    }
-}
-
-fun constructRoute(route: String): String {
-    return when {
-        route.contains(UrlConstants.BASE_URL_HTTP) -> route
-        route.startsWith("/") -> "${UrlConstants.BASE_URL_HTTP}$route"
-        else -> "${UrlConstants.BASE_URL_HTTP}/$route"
-    }
-}

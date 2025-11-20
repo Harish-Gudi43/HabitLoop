@@ -16,5 +16,7 @@ data class HabitEntity(
     val isCompleted: Boolean = false,
     val streak: Int = 0,
     val nextOccurrence: String = "",
-    val lastCompletedDate: Long = 0L
+    val lastCompletedDate: Long = 0L,
+    val reminderHour: Int? = null,
+    val reminderMinute: Int? = null
 )

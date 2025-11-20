@@ -19,7 +19,7 @@ import com.uk.ac.tees.mad.habitloop.presentation.navigation.GraphRoutes
 fun BottomNavigationBar(selectedTitle: String, navController: NavHostController) {
     val items = listOf(
         BottomNavItem("Dashboard", Icons.Default.Home, GraphRoutes.DashBoard),
-        BottomNavItem("Add Habit", Icons.Default.Add, GraphRoutes.AddHabbit),
+        BottomNavItem("Add Habit", Icons.Default.Add, GraphRoutes.AddHabbit()),
         BottomNavItem("Profile", Icons.Default.Person, GraphRoutes.Profile),
         BottomNavItem("Settings", Icons.Default.Settings, GraphRoutes.Settings),
         BottomNavItem("Notifications", Icons.Default.Notifications, GraphRoutes.Notifications)

@@ -3,24 +3,20 @@ package com.uk.ac.tees.mad.habitloop.presentation.auth.create_account
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.uk.ac.tees.mad.habitloop.domain.AuthRepository
+import com.uk.ac.tees.mad.habitloop.domain.util.HttpResult
+import com.uk.ac.tees.mad.habitloop.domain.util.onFailure
+import com.uk.ac.tees.mad.habitloop.domain.util.onSuccess
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import uk.ac.tees.mad.bookly.domain.util.onFailure
-import uk.ac.tees.mad.bookly.domain.util.onSuccess
 
 class CreateAccountViewModel(private val authRepository: AuthRepository) : ViewModel() {
 
     private val _state = MutableStateFlow(CreateAccountState())
-    val state = _state.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5_000L),
-        initialValue = CreateAccountState()
-    )
+    val state = _state.asStateFlow()
 
     private val eventChannel = Channel<CreateAccountEvent>()
     val events = eventChannel.receiveAsFlow()
@@ -31,28 +27,22 @@ class CreateAccountViewModel(private val authRepository: AuthRepository) : ViewM
             is CreateAccountAction.OnEmailChange -> _state.update { it.copy(email = action.email) }
             is CreateAccountAction.OnPasswordChange -> _state.update { it.copy(password = action.password) }
             is CreateAccountAction.OnConfirmPasswordChange -> _state.update { it.copy(confirmPassword = action.confirmPassword) }
-            CreateAccountAction.OnCreateAccountClick -> createAccount()
+            CreateAccountAction.OnCreateAccountClick -> signUp()
             CreateAccountAction.OnSignInClick -> sendEvent(CreateAccountEvent.GoToLogin)
         }
     }
 
-    private fun createAccount() {
-        val currentState = state.value
-        if (currentState.password != currentState.confirmPassword) {
-            sendEvent(CreateAccountEvent.Failure) // Or a more specific event
-            return
-        }
-
+    private fun signUp() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
             authRepository.signUp(
-                name = currentState.name,
-                email = currentState.email,
-                password = currentState.password
+                email = state.value.email,
+                password = state.value.password,
+                name = state.value.name
             ).onSuccess {
                 sendEvent(CreateAccountEvent.Success)
-            }.onFailure {
-                sendEvent(CreateAccountEvent.Failure)
+            }.onFailure { 
+                sendEvent(CreateAccountEvent.Failure(it))
             }
             _state.update { it.copy(isLoading = false) }
         }

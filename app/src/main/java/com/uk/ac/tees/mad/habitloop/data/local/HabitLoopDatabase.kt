@@ -5,11 +5,12 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 
 @Database(
-    entities = [HabitEntity::class],
-    version = 1,
+    entities = [HabitEntity::class, QuoteEntity::class],
+    version = 3,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
 abstract class HabitLoopDatabase : RoomDatabase() {
     abstract fun habitDao(): HabitDao
+    abstract fun quoteDao(): QuoteDao
 }

@@ -4,8 +4,9 @@ import com.uk.ac.tees.mad.habitloop.domain.models.Habit
 
 data class DashboardState(
     val userName: String = "Alex",
-    val quote: String = "The best way to predict the future is to create it.",
-    val quoteAuthor: String = "Peter Drucker",
+    val quote: String = "",
+    val quoteAuthor: String = "",
     val habits: List<Habit> = emptyList(),
-    val isGridView: Boolean = false
+    val isGridView: Boolean = false,
+    val isRefreshing: Boolean = false
 )

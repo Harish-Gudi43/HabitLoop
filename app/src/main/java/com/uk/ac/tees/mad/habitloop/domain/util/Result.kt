@@ -1,41 +1,20 @@
-package uk.ac.tees.mad.bookly.domain.util
+package com.uk.ac.tees.mad.habitloop.domain.util
 
-
-sealed interface Result<out D, out E : Error> {
+sealed interface Result<out D, out E> {
     data class Success<out D>(val data: D) : Result<D, Nothing>
-    data class Failure<out E : Error>(val error: E) : Result<Nothing, E>
+    data class Failure<out E>(val error: E) : Result<Nothing, E>
 }
 
-inline fun <T, E : Error, R> Result<T, E>.map(map: (T) -> R): Result<R, E> {
-    return when (this) {
-        is Result.Failure -> Result.Failure(error = error)
-        is Result.Success -> Result.Success(data = map(this.data))
+inline fun <D, E> Result<D, E>.onSuccess(action: (D) -> Unit): Result<D, E> {
+    if (this is Result.Success) {
+        action(data)
     }
+    return this
 }
 
-inline fun <T, E : Error> Result<T, E>.onSuccess(action: (T) -> Unit): Result<T, E> {
-    return when (this) {
-        is Result.Failure -> this
-        is Result.Success -> {
-            action(this.data)
-            this
-        }
+inline fun <D, E> Result<D, E>.onFailure(action: (E) -> Unit): Result<D, E> {
+    if (this is Result.Failure) {
+        action(error)
     }
+    return this
 }
-
-inline fun <T, E : Error> Result<T, E>.onFailure(action: (E) -> Unit): Result<T, E> {
-    return when (this) {
-        is Result.Failure -> {
-            action(error)
-            this
-        }
-        is Result.Success -> this
-    }
-}
-
-fun <T, E : Error> Result<T, E>.asEmptyResult(): EmptyResult<E> {
-    return map { }
-}
-
-typealias EmptyResult<E> = Result<Unit, E>
-

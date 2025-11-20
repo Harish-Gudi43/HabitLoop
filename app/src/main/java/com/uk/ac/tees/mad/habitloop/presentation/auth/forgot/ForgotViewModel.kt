@@ -3,6 +3,9 @@ package com.uk.ac.tees.mad.habitloop.presentation.auth.forgot
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.uk.ac.tees.mad.habitloop.domain.AuthRepository
+import com.uk.ac.tees.mad.habitloop.domain.util.HttpResult
+import com.uk.ac.tees.mad.habitloop.domain.util.onFailure
+import com.uk.ac.tees.mad.habitloop.domain.util.onSuccess
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -10,8 +13,6 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import uk.ac.tees.mad.bookly.domain.util.onFailure
-import uk.ac.tees.mad.bookly.domain.util.onSuccess
 
 class ForgotViewModel(private val authRepository: AuthRepository) : ViewModel() {
 
@@ -39,7 +40,7 @@ class ForgotViewModel(private val authRepository: AuthRepository) : ViewModel() 
             _state.update { it.copy(isLoading = true) }
             authRepository.forgotPassword(state.value.email)
                 .onSuccess { sendEvent(ForgotEvent.Success) }
-                .onFailure { sendEvent(ForgotEvent.Failure) }
+                .onFailure { sendEvent(ForgotEvent.Failure(it)) }
             _state.update { it.copy(isLoading = false) }
         }
     }

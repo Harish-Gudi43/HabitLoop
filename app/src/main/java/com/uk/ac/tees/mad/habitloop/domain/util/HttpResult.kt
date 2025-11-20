@@ -1,4 +1,4 @@
-package uk.ac.tees.mad.bookly.domain.util
+package com.uk.ac.tees.mad.habitloop.domain.util
 
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.HttpRequestTimeoutException
@@ -7,13 +7,18 @@ import io.ktor.serialization.JsonConvertException
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
 
-suspend fun <T> httpResult(block: suspend () -> T): Result<T, DataError.Remote> {
+sealed interface HttpResult<out D, out E> {
+    data class Success<out D>(val data: D) : HttpResult<D, Nothing>
+    data class Failure<out E>(val error: E) : HttpResult<Nothing, E>
+}
+
+suspend fun <T> httpResult(block: suspend () -> T): HttpResult<T, DataError.Remote> {
     return try {
-        Result.Success(block())
+        HttpResult.Success(block())
     } catch (e: CancellationException) {
         throw e
     } catch (e: Throwable) {
-        Result.Failure(e.toHttpError())
+        HttpResult.Failure(e.toHttpError())
     }
 }
 

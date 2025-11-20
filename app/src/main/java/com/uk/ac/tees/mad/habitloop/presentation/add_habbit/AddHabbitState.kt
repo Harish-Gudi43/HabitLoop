@@ -10,5 +10,8 @@ data class AddHabbitState(
     val isReminderEnabled: Boolean = false,
     val isCustomFrequencyDialogVisible: Boolean = false,
     val customFrequencyDays: List<String> = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"),
-    val selectedCustomFrequencyDays: List<String> = emptyList()
+    val selectedCustomFrequencyDays: List<String> = emptyList(),
+    val reminderHour: Int? = null,
+    val reminderMinute: Int? = null,
+    val isTimePickerVisible: Boolean = false
 )
