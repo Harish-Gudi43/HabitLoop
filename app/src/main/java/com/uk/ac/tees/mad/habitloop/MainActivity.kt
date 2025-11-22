@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.compose.rememberNavController
 import com.uk.ac.tees.mad.habitloop.presentation.navigation.Navigation
 import com.uk.ac.tees.mad.habitloop.ui.theme.HabitLoopTheme
@@ -14,6 +15,7 @@ import com.uk.ac.tees.mad.habitloop.ui.theme.HabitLoopTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        installSplashScreen()
         setContent {
             HabitLoopTheme {
                 // A surface container using the 'background' color from the theme
