@@ -1,5 +1,7 @@
 package com.uk.ac.tees.mad.habitloop.presentation.navigation
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
@@ -14,6 +16,7 @@ import com.uk.ac.tees.mad.habitloop.presentation.dashboard.DashboardRoot
 import com.uk.ac.tees.mad.habitloop.presentation.splash.SplashScreen
 import kotlinx.serialization.Serializable
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun Navigation(navcontroller: NavHostController){
 

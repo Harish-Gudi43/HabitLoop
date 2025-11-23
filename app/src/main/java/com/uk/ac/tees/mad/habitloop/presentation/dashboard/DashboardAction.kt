@@ -4,5 +4,5 @@ sealed interface DashboardAction {
     data class OnViewToggle(val isGridView: Boolean) : DashboardAction
     data class OnHabitClick(val habitId: String) : DashboardAction
     data class OnEditClick(val habitId: String) : DashboardAction
-    object OnRefresh : DashboardAction
+    data object OnRefresh : DashboardAction
 }
