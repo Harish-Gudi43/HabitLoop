@@ -7,7 +7,7 @@ data class WeeklyProgress(
 
 data class ProfileState(
     val userName: String = "Alex Morgan",
-    val profileImageRes: Int? = null, // Using Int for drawable resource, can be String for URL
+    val profileImageUrl: String? = null, 
     val totalHabits: Int = 25,
     val currentStreak: Int = 12,
     val longestStreak: Int = 30,

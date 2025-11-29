@@ -1,8 +1,12 @@
 package com.uk.ac.tees.mad.habitloop.presentation.profile
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -36,6 +40,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import coil.compose.AsyncImage
 import com.uk.ac.tees.mad.habitloop.R
 import com.uk.ac.tees.mad.habitloop.presentation.common.BottomNavigationBar
 import com.uk.ac.tees.mad.habitloop.ui.theme.HabitLoopTheme
@@ -62,6 +67,11 @@ fun ProfileScreen(
     onAction: (ProfileAction) -> Unit,
     navController: NavHostController
 ) {
+    val singlePhotoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+        onResult = { uri -> uri?.let { onAction(ProfileAction.OnProfileImageChange(it)) } }
+    )
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -84,7 +94,15 @@ fun ProfileScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(Modifier.height(16.dp))
-            ProfileHeader(state = state, onAction = onAction)
+            ProfileHeader(
+                state = state,
+                onAction = onAction,
+                onImageClick = {
+                    singlePhotoPickerLauncher.launch(
+                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                    )
+                }
+            )
             Spacer(Modifier.height(24.dp))
             StatsGrid(state = state)
             Spacer(Modifier.height(24.dp))
@@ -96,7 +114,11 @@ fun ProfileScreen(
 }
 
 @Composable
-fun ProfileHeader(state: ProfileState, onAction: (ProfileAction) -> Unit) {
+fun ProfileHeader(
+    state: ProfileState,
+    onAction: (ProfileAction) -> Unit,
+    onImageClick: () -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -109,13 +131,15 @@ fun ProfileHeader(state: ProfileState, onAction: (ProfileAction) -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Image(
-                painter = painterResource(id = state.profileImageRes ?: R.drawable.ic_profile_placeholder),
+            AsyncImage(
+                model = state.profileImageUrl,
                 contentDescription = "Profile Picture",
                 modifier = Modifier
                     .size(100.dp)
-                    .clip(CircleShape),
-                contentScale = ContentScale.Crop
+                    .clip(CircleShape)
+                    .clickable { onImageClick() },
+                contentScale = ContentScale.Crop,
+                placeholder = painterResource(id = R.drawable.ic_profile_placeholder)
             )
             Text(text = state.userName, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
             TextButton(onClick = { onAction(ProfileAction.OnEditProfileClick) }) {
@@ -280,7 +304,7 @@ private fun PreviewProfileScreen() {
         val navController = rememberNavController()
         ProfileScreen(
             state = ProfileState(
-                profileImageRes = R.drawable.ic_profile_placeholder,
+                profileImageUrl = null,
                 weeklyProgress = listOf(
                     WeeklyProgress("Week 1", 0.70f),
                     WeeklyProgress("Week 2", 0.85f),

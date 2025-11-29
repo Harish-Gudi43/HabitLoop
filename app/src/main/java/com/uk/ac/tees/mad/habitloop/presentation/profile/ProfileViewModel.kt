@@ -1,15 +1,23 @@
 package com.uk.ac.tees.mad.habitloop.presentation.profile
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.uk.ac.tees.mad.habitloop.R
+import com.uk.ac.tees.mad.habitloop.domain.AuthRepository
+import com.uk.ac.tees.mad.habitloop.domain.SupabaseStorageRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
-class ProfileViewModel : ViewModel() {
+class ProfileViewModel(
+    private val authRepository: AuthRepository,
+    private val storageRepository: SupabaseStorageRepository
+) : ViewModel() {
 
     private var hasLoadedInitialData = false
 
@@ -27,6 +35,21 @@ class ProfileViewModel : ViewModel() {
             initialValue = ProfileState()
         )
 
+    init {
+        viewModelScope.launch {
+            authRepository.getCurrentUser().collectLatest { user ->
+                user?.let {
+                    _state.update {
+                        it.copy(
+                            userName = user.name,
+                            profileImageUrl = user.profileImageUrl
+                        )
+                    }
+                }
+            }
+        }
+    }
+
     fun onAction(action: ProfileAction) {
         when (action) {
             is ProfileAction.OnMotivationModeToggle -> {
@@ -41,6 +64,21 @@ class ProfileViewModel : ViewModel() {
             }
             ProfileAction.OnEditProfileClick -> {
                 // TODO: Handle navigation to an edit profile screen
+            }
+            is ProfileAction.OnProfileImageChange -> {
+                viewModelScope.launch {
+                    val imageUrl = storageRepository.uploadProfilePicture(action.imageUri)
+                    val user = authRepository.getCurrentUser().value
+                    user?.let {
+                        val updatedUser = it.copy(profileImageUrl = imageUrl)
+                        authRepository.updateUser(updatedUser)
+                    }
+                }
+            }
+            ProfileAction.OnLogoutClick -> {
+                viewModelScope.launch {
+                    authRepository.logOut()
+                }
             }
         }
     }

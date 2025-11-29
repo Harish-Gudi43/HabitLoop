@@ -107,4 +107,8 @@ dependencies {
 
     implementation(libs.androidx.navigation.compose)
 
+    // Supabase
+    implementation(platform(libs.supabase.bom))
+    implementation(libs.supabase.storage)
+
 }
