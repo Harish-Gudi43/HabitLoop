@@ -1,13 +1,11 @@
 package com.uk.ac.tees.mad.habitloop.domain.util
 
-sealed interface DataError {
-    enum class Firebase : DataError {
-        UNKNOWN_ERROR,
-        USER_NOT_FOUND,
-        INVALID_CREDENTIALS
+sealed interface DataError: Error {
+    enum class Firebase: DataError {
+        INVALID_CREDENTIALS,
+        UNKNOWN
     }
-
-    enum class Remote : DataError {
+    enum class Remote: DataError {
         NO_INTERNET,
         REQUEST_TIMEOUT,
         SERIALIZATION,

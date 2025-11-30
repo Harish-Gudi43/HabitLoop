@@ -23,16 +23,22 @@ import com.uk.ac.tees.mad.habitloop.presentation.profile.ProfileViewModel
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.storage.Storage
+import io.github.jan.supabase.storage.storage
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.json.Json
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
+import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
 val appModule = module {
+
+    // Coroutine Dispatchers
+    single(named("IODispatcher")) { Dispatchers.IO }
 
     // Firebase
     single { FirebaseAuth.getInstance() }
@@ -55,8 +61,8 @@ val appModule = module {
     // Supabase
     single {
         createSupabaseClient(
-            supabaseUrl = "YOUR_SUPABASE_URL",
-            supabaseKey = "YOUR_SUPABASE_KEY"
+            supabaseUrl = "https://kvdagjrceetbstkqanlf.supabase.co",
+            supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2ZGFnanJjZWV0YnN0a3FhbmxmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1NTgwODQsImV4cCI6MjA3NjEzNDA4NH0.7S3oqGekCWggEMtaCne9JknjhqlGdpcxFZvUEurmRGI"
         ) {
             install(Storage)
         }
@@ -80,7 +86,7 @@ val appModule = module {
 
     // Repositories
     single<HabitLoopRepository> { HabitLoopRepositoryImp(get(), get(), get()) }
-    single<AuthRepository> { AuthRepositoryImpl(get(), get(), get()) }
+    single<AuthRepository> { AuthRepositoryImpl(get(), get(), get(), get()) }
     single<QuoteRepository> { QuoteRepositoryImp(get(), get()) }
     single<SupabaseStorageRepository> { SupabaseStorageRepositoryImpl(get()) }
 
@@ -93,5 +99,5 @@ val appModule = module {
     viewModel { CreateAccountViewModel(get()) }
     viewModel { ForgotViewModel(get()) }
     viewModel { LoginViewModel(get()) }
-    viewModel { ProfileViewModel(get(), get()) }
+    viewModel { ProfileViewModel(get(), get(), get(named("IODispatcher"))) }
 }

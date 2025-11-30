@@ -1,46 +1,47 @@
 package com.uk.ac.tees.mad.habitloop.presentation.profile
 
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.uk.ac.tees.mad.habitloop.R
 import com.uk.ac.tees.mad.habitloop.domain.AuthRepository
 import com.uk.ac.tees.mad.habitloop.domain.SupabaseStorageRepository
+import com.uk.ac.tees.mad.habitloop.domain.models.User
+import com.uk.ac.tees.mad.habitloop.domain.util.NavigationEvent
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class ProfileViewModel(
     private val authRepository: AuthRepository,
-    private val storageRepository: SupabaseStorageRepository
+    private val storageRepository: SupabaseStorageRepository,
+    private val ioDispatcher: CoroutineDispatcher
 ) : ViewModel() {
 
-    private var hasLoadedInitialData = false
-
     private val _state = MutableStateFlow(ProfileState())
-    val state = _state
-        .onStart {
-            if (!hasLoadedInitialData) {
-                loadInitialData()
-                hasLoadedInitialData = true
-            }
-        }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000L),
-            initialValue = ProfileState()
-        )
+    val state = _state.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000L),
+        initialValue = ProfileState()
+    )
+
+    private val _navigationEvent = Channel<NavigationEvent>()
+    val navigationEvent = _navigationEvent.receiveAsFlow()
 
     init {
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             authRepository.getCurrentUser().collectLatest { user ->
                 user?.let {
                     _state.update {
                         it.copy(
+                            uid = user.uid,
+                            email = user.email,
                             userName = user.name,
                             profileImageUrl = user.profileImageUrl
                         )
@@ -66,34 +67,32 @@ class ProfileViewModel(
                 // TODO: Handle navigation to an edit profile screen
             }
             is ProfileAction.OnProfileImageChange -> {
-                viewModelScope.launch {
-                    val imageUrl = storageRepository.uploadProfilePicture(action.imageUri)
-                    val user = authRepository.getCurrentUser().value
-                    user?.let {
-                        val updatedUser = it.copy(profileImageUrl = imageUrl)
+                viewModelScope.launch(ioDispatcher) {
+                    try {
+                        _state.update { it.copy(isUploadingPhoto = true) }
+                        val imageUrl = storageRepository.uploadProfilePicture(action.imageUri)
+                        val updatedUser = state.value.toDomain().copy(profileImageUrl = imageUrl)
                         authRepository.updateUser(updatedUser)
+                    } catch (e: Exception) {
+                        Log.e("ProfileViewModel", "Failed to upload profile picture", e)
+                    } finally {
+                        _state.update { it.copy(isUploadingPhoto = false) }
                     }
                 }
             }
             ProfileAction.OnLogoutClick -> {
-                viewModelScope.launch {
+                viewModelScope.launch(ioDispatcher) {
                     authRepository.logOut()
+                    _navigationEvent.send(NavigationEvent.NavigateToLogin)
                 }
             }
         }
     }
-
-    private fun loadInitialData() {
-        _state.update {
-            it.copy(
-                profileImageRes = R.drawable.ic_profile_placeholder,
-                weeklyProgress = listOf(
-                    WeeklyProgress("Week 1", 0.70f),
-                    WeeklyProgress("Week 2", 0.85f),
-                    WeeklyProgress("Week 3", 0.75f),
-                    WeeklyProgress("Week 4", 0.90f)
-                )
-            )
-        }
-    }
 }
+
+fun ProfileState.toDomain() = User(
+    uid = uid,
+    name = userName,
+    email = email,
+    profileImageUrl = profileImageUrl
+)

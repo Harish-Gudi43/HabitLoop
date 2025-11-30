@@ -3,9 +3,7 @@ package com.uk.ac.tees.mad.habitloop.presentation.auth.create_account
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.uk.ac.tees.mad.habitloop.domain.AuthRepository
-import com.uk.ac.tees.mad.habitloop.domain.util.HttpResult
-import com.uk.ac.tees.mad.habitloop.domain.util.onFailure
-import com.uk.ac.tees.mad.habitloop.domain.util.onSuccess
+import com.uk.ac.tees.mad.habitloop.domain.util.Result
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -35,14 +33,13 @@ class CreateAccountViewModel(private val authRepository: AuthRepository) : ViewM
     private fun signUp() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
-            authRepository.signUp(
+            when(val result = authRepository.signUp(
                 email = state.value.email,
                 password = state.value.password,
                 name = state.value.name
-            ).onSuccess {
-                sendEvent(CreateAccountEvent.Success)
-            }.onFailure { 
-                sendEvent(CreateAccountEvent.Failure(it))
+            )) {
+                is Result.Success -> sendEvent(CreateAccountEvent.Success)
+                is Result.Error -> sendEvent(CreateAccountEvent.Failure(result.error))
             }
             _state.update { it.copy(isLoading = false) }
         }

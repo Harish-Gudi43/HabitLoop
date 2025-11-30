@@ -1,15 +1,17 @@
 package com.uk.ac.tees.mad.habitloop.data
 
+import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.uk.ac.tees.mad.habitloop.data.local.HabitDao
 import com.uk.ac.tees.mad.habitloop.data.local.UserDao
 import com.uk.ac.tees.mad.habitloop.domain.AuthRepository
 import com.uk.ac.tees.mad.habitloop.domain.models.User
+import com.uk.ac.tees.mad.habitloop.domain.models.UserDto
 import com.uk.ac.tees.mad.habitloop.domain.models.toDomain
 import com.uk.ac.tees.mad.habitloop.domain.models.toEntity
 import com.uk.ac.tees.mad.habitloop.domain.util.DataError
 import com.uk.ac.tees.mad.habitloop.domain.util.EmptyResult
-import com.uk.ac.tees.mad.habitloop.domain.util.Result
 import com.uk.ac.tees.mad.habitloop.domain.util.firebaseResult
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
@@ -19,7 +21,8 @@ import kotlinx.coroutines.tasks.await
 class AuthRepositoryImpl(
     private val firebaseAuth: FirebaseAuth,
     private val firestore: FirebaseFirestore,
-    private val userDao: UserDao
+    private val userDao: UserDao,
+    private val habitDao: HabitDao
 ) : AuthRepository {
 
     override suspend fun signIn(email: String, password: String): EmptyResult<DataError.Firebase> {
@@ -52,18 +55,31 @@ class AuthRepositoryImpl(
     override suspend fun logOut(): EmptyResult<DataError.Firebase> {
         return firebaseResult {
             firebaseAuth.signOut()
+            userDao.clear()
+            habitDao.clear()
         }
     }
 
     override fun getCurrentUser(): Flow<User?> {
-        return firebaseAuth.currentUser?.uid?.let {
-            userDao.getUser(it).flatMapLatest { userEntity ->
+        return firebaseAuth.currentUser?.uid?.let { userId ->
+            userDao.getUser(userId).flatMapLatest { userEntity ->
                 flow {
+                    // 1. Emit the local data first
                     emit(userEntity?.toDomain())
-                    val remoteUser = firestore.collection("users").document(it).get().await().toObject(User::class.java)
-                    remoteUser?.let { user ->
-                        userDao.upsertUser(user.toEntity())
-                        emit(user)
+
+                    // 2. Then, try to fetch fresh data from the remote source
+                    try {
+                        val remoteUserDto = firestore.collection("users").document(userId).get().await().toObject(UserDto::class.java)
+                        remoteUserDto?.let { dto ->
+                            val freshUser = dto.toDomain()
+                            // 3. Update the local cache
+                            userDao.upsertUser(freshUser.toEntity())
+                            // 4. Emit the fresh data to the UI
+                            emit(freshUser)
+                        }
+                    } catch (e: Exception) {
+                        Log.e("AuthRepositoryImpl", "Failed to fetch remote user data.", e)
+                        // If the network fails, we just log the error. The user still sees the cached data.
                     }
                 }
             }
@@ -71,6 +87,10 @@ class AuthRepositoryImpl(
     }
 
     override suspend fun updateUser(user: User): EmptyResult<DataError.Firebase> {
+        // 1. Update the local cache for an instant UI update
+        userDao.upsertUser(user.toEntity())
+
+        // 2. Update the remote source in the background
         return firebaseResult {
             firestore.collection("users").document(user.uid).set(user).await()
         }

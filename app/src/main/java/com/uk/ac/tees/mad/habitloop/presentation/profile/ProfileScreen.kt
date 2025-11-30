@@ -1,5 +1,6 @@
 package com.uk.ac.tees.mad.habitloop.presentation.profile
 
+import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -21,6 +22,7 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,8 +43,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
 import com.uk.ac.tees.mad.habitloop.R
+import com.uk.ac.tees.mad.habitloop.domain.util.NavigationEvent
+import com.uk.ac.tees.mad.habitloop.domain.util.ObserveAsEvents
 import com.uk.ac.tees.mad.habitloop.presentation.common.BottomNavigationBar
+import com.uk.ac.tees.mad.habitloop.presentation.navigation.GraphRoutes
 import com.uk.ac.tees.mad.habitloop.ui.theme.HabitLoopTheme
 import org.koin.androidx.compose.koinViewModel
 
@@ -53,6 +61,15 @@ fun ProfileRoot(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
+    ObserveAsEvents(viewModel.navigationEvent) {
+        if (it is NavigationEvent.NavigateToLogin) {
+            navController.navigate(GraphRoutes.Login) {
+                popUpTo(GraphRoutes.Profile) { inclusive = true }
+                launchSingleTop = true
+            }
+        }
+    }
+
     ProfileScreen(
         state = state,
         onAction = viewModel::onAction,
@@ -60,16 +77,19 @@ fun ProfileRoot(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
 fun ProfileScreen(
     state: ProfileState,
     onAction: (ProfileAction) -> Unit,
     navController: NavHostController
 ) {
-    val singlePhotoPickerLauncher = rememberLauncherForActivityResult(
+    val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri -> uri?.let { onAction(ProfileAction.OnProfileImageChange(it)) } }
+    )
+    val readImagesPermission = rememberPermissionState(
+        permission = Manifest.permission.READ_MEDIA_IMAGES
     )
 
     Scaffold(
@@ -98,9 +118,13 @@ fun ProfileScreen(
                 state = state,
                 onAction = onAction,
                 onImageClick = {
-                    singlePhotoPickerLauncher.launch(
-                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                    )
+                    if (readImagesPermission.status.isGranted) {
+                        photoPickerLauncher.launch(
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                        )
+                    } else {
+                        readImagesPermission.launchPermissionRequest()
+                    }
                 }
             )
             Spacer(Modifier.height(24.dp))
@@ -109,6 +133,15 @@ fun ProfileScreen(
             WeeklyProgressCard(state.weeklyProgress)
             Spacer(Modifier.height(24.dp))
             SettingsToggles(state = state, onAction = onAction)
+            Spacer(Modifier.height(24.dp))
+            Button(
+                onClick = { onAction(ProfileAction.OnLogoutClick) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+            ) {
+                Text("Logout")
+            }
+            Spacer(Modifier.height(16.dp))
         }
     }
 }
@@ -131,16 +164,21 @@ fun ProfileHeader(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            AsyncImage(
-                model = state.profileImageUrl,
-                contentDescription = "Profile Picture",
-                modifier = Modifier
-                    .size(100.dp)
-                    .clip(CircleShape)
-                    .clickable { onImageClick() },
-                contentScale = ContentScale.Crop,
-                placeholder = painterResource(id = R.drawable.ic_profile_placeholder)
-            )
+            Box(contentAlignment = Alignment.Center) {
+                AsyncImage(
+                    model = state.profileImageUrl,
+                    contentDescription = "Profile Picture",
+                    modifier = Modifier
+                        .size(100.dp)
+                        .clip(CircleShape)
+                        .clickable { onImageClick() },
+                    contentScale = ContentScale.Crop,
+                    placeholder = painterResource(id = R.drawable.ic_profile_placeholder)
+                )
+                if (state.isUploadingPhoto) {
+                    CircularProgressIndicator()
+                }
+            }
             Text(text = state.userName, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
             TextButton(onClick = { onAction(ProfileAction.OnEditProfileClick) }) {
                 Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit Icon", modifier = Modifier.size(16.dp))

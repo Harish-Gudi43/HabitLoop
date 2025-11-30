@@ -6,14 +6,17 @@ data class WeeklyProgress(
 )
 
 data class ProfileState(
-    val userName: String = "Alex Morgan",
-    val profileImageUrl: String? = null, 
-    val totalHabits: Int = 25,
-    val currentStreak: Int = 12,
-    val longestStreak: Int = 30,
-    val completionRate: Int = 85,
+    val uid: String = "",
+    val email: String = "",
+    val userName: String = "",
+    val profileImageUrl: String? = null,
+    val totalHabits: Int = 0,
+    val currentStreak: Int = 0,
+    val longestStreak: Int = 0,
+    val completionRate: Int = 0,
     val weeklyProgress: List<WeeklyProgress> = emptyList(),
     val isMotivationModeOn: Boolean = true,
     val isDarkModeOn: Boolean = true,
-    val isNotificationsEnabled: Boolean = true
+    val isNotificationsEnabled: Boolean = true,
+    val isUploadingPhoto: Boolean = false
 )

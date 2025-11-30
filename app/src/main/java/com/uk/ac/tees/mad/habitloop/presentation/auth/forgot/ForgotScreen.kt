@@ -1,3 +1,4 @@
+
 package com.uk.ac.tees.mad.habitloop.presentation.auth.forgot
 
 import androidx.compose.foundation.Image
@@ -50,7 +51,7 @@ fun ForgotRoot(
         when (event) {
             is ForgotEvent.Success -> scope.launch { snackbarHostState.showSnackbar("Password reset link sent") }
             is ForgotEvent.Failure -> scope.launch { snackbarHostState.showSnackbar("Failed to send reset link") }
-            is ForgotEvent.GoToLogin -> onBackToLogin()
+            is ForgotEvent.BackToLogin -> onBackToLogin()
         }
     }
 
@@ -74,7 +75,7 @@ fun ForgotScreen(
             TopAppBar(
                 title = { /* No title */ },
                 navigationIcon = {
-                    IconButton(onClick = { onAction(ForgotAction.OnBackArrowClick) }) {
+                    IconButton(onClick = { onAction(ForgotAction.OnBackToLoginClick) }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"

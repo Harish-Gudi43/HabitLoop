@@ -12,7 +12,7 @@ class SupabaseStorageRepositoryImpl(
 
     override suspend fun uploadProfilePicture(imageUri: Uri): String {
         val fileName = "${UUID.randomUUID()}"
-        val data = storage.from("profile-pictures").upload(fileName, imageUri)
-        return data
+        storage.from("satyam").upload(fileName, imageUri)
+        return storage.from("satyam").publicUrl(fileName)
     }
 }

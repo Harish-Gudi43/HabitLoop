@@ -7,9 +7,9 @@ import io.ktor.serialization.JsonConvertException
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
 
-sealed interface HttpResult<out D, out E> {
+sealed interface HttpResult<out D, out E: Error> {
     data class Success<out D>(val data: D) : HttpResult<D, Nothing>
-    data class Failure<out E>(val error: E) : HttpResult<Nothing, E>
+    data class Failure<out E: Error>(val error: E) : HttpResult<Nothing, E>
 }
 
 suspend fun <T> httpResult(block: suspend () -> T): HttpResult<T, DataError.Remote> {

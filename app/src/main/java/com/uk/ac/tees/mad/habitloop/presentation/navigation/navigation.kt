@@ -2,7 +2,6 @@ package com.uk.ac.tees.mad.habitloop.presentation.navigation
 
 import android.os.Build
 import androidx.annotation.RequiresApi
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -13,6 +12,7 @@ import com.uk.ac.tees.mad.habitloop.presentation.auth.create_account.CreateAccou
 import com.uk.ac.tees.mad.habitloop.presentation.auth.forgot.ForgotRoot
 import com.uk.ac.tees.mad.habitloop.presentation.auth.login.LoginRoot
 import com.uk.ac.tees.mad.habitloop.presentation.dashboard.DashboardRoot
+import com.uk.ac.tees.mad.habitloop.presentation.profile.ProfileRoot
 import com.uk.ac.tees.mad.habitloop.presentation.splash.SplashScreen
 import kotlinx.serialization.Serializable
 
@@ -80,9 +80,9 @@ fun Navigation(navcontroller: NavHostController){
             AddHabbitRoot(navController = navcontroller)
         }
 
-        composable<GraphRoutes.Profile> { Text(text = "Profile Screen") }
-        composable<GraphRoutes.Settings> { Text(text = "Settings Screen") }
-        composable<GraphRoutes.Notifications> { Text(text = "Notifications Screen") }
+        composable<GraphRoutes.Profile> { ProfileRoot(navController = navcontroller) }
+        composable<GraphRoutes.Settings> { ProfileRoot(navController = navcontroller) }
+        composable<GraphRoutes.Notifications> { ProfileRoot(navController = navcontroller) }
 
     }
 

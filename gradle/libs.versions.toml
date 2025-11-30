@@ -29,7 +29,8 @@ credentialsPlayServicesAuth = "1.5.0"
 googleid = "1.1.1"
 firebaseFirestore = "26.0.2"
 firebaseDatabase = "22.0.1"
-supabase = "2.8.1"
+supabase = "3.2.5"
+accompanist = "0.37.3"
 
 
 [libraries]
@@ -104,6 +105,9 @@ firebase-database = { group = "com.google.firebase", name = "firebase-database",
 # Supabase
 supabase-bom = { module = "io.github.jan-tennert.supabase:bom", version.ref = "supabase" }
 supabase-storage = { module = "io.github.jan-tennert.supabase:storage-kt" }
+
+# Accompanist
+accompanist-permissions = { group = "com.google.accompanist", name = "accompanist-permissions", version.ref = "accompanist" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
