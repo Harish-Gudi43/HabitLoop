@@ -11,7 +11,13 @@ fun Habit.toEntity(): HabitEntity {
         category = category,
         frequency = frequency,
         reminder = reminder,
-        customFrequencyDays = customFrequencyDays
+        customFrequencyDays = customFrequencyDays,
+        isCompleted = completed,
+        streak = streak,
+        nextOccurrence = nextOccurrence,
+        lastCompletedDate = lastCompletedDate,
+        reminderHour = reminderHour,
+        reminderMinute = reminderMinute
     )
 }
 
@@ -23,6 +29,12 @@ fun HabitEntity.toDomain(): Habit {
         category = category,
         frequency = frequency,
         reminder = reminder,
-        customFrequencyDays = customFrequencyDays
+        customFrequencyDays = customFrequencyDays,
+        completed = isCompleted,
+        streak = streak,
+        nextOccurrence = nextOccurrence,
+        lastCompletedDate = lastCompletedDate,
+        reminderHour = reminderHour,
+        reminderMinute = reminderMinute
     )
 }

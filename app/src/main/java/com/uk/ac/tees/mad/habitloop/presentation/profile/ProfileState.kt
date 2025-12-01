@@ -18,5 +18,6 @@ data class ProfileState(
     val isMotivationModeOn: Boolean = true,
     val isDarkModeOn: Boolean = true,
     val isNotificationsEnabled: Boolean = true,
-    val isUploadingPhoto: Boolean = false
+    val isUploadingPhoto: Boolean = false,
+    val motivationalQuote: String = ""
 )

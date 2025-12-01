@@ -3,7 +3,6 @@ package com.uk.ac.tees.mad.habitloop.presentation.common
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
@@ -22,7 +21,6 @@ fun BottomNavigationBar(selectedTitle: String, navController: NavHostController)
         BottomNavItem("Add Habit", Icons.Default.Add, GraphRoutes.AddHabbit()),
         BottomNavItem("Profile", Icons.Default.Person, GraphRoutes.Profile),
         BottomNavItem("Settings", Icons.Default.Settings, GraphRoutes.Settings),
-        BottomNavItem("Notifications", Icons.Default.Notifications, GraphRoutes.Notifications)
     )
     NavigationBar {
         items.forEach { item ->

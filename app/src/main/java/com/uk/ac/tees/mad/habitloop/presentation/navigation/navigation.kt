@@ -13,6 +13,7 @@ import com.uk.ac.tees.mad.habitloop.presentation.auth.forgot.ForgotRoot
 import com.uk.ac.tees.mad.habitloop.presentation.auth.login.LoginRoot
 import com.uk.ac.tees.mad.habitloop.presentation.dashboard.DashboardRoot
 import com.uk.ac.tees.mad.habitloop.presentation.profile.ProfileRoot
+import com.uk.ac.tees.mad.habitloop.presentation.setting.SettingRoot
 import com.uk.ac.tees.mad.habitloop.presentation.splash.SplashScreen
 import kotlinx.serialization.Serializable
 
@@ -81,8 +82,7 @@ fun Navigation(navcontroller: NavHostController){
         }
 
         composable<GraphRoutes.Profile> { ProfileRoot(navController = navcontroller) }
-        composable<GraphRoutes.Settings> { ProfileRoot(navController = navcontroller) }
-        composable<GraphRoutes.Notifications> { ProfileRoot(navController = navcontroller) }
+        composable<GraphRoutes.Settings> { SettingRoot(navController = navcontroller) }
 
     }
 
@@ -105,6 +105,4 @@ sealed class GraphRoutes {
     data object Profile : GraphRoutes()
     @Serializable
     data object Settings : GraphRoutes()
-    @Serializable
-    data object Notifications : GraphRoutes()
 }

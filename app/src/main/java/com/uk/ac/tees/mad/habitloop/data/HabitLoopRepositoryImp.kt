@@ -1,5 +1,7 @@
 package com.uk.ac.tees.mad.habitloop.data
 
+import android.content.Context
+import android.widget.Toast
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.uk.ac.tees.mad.habitloop.data.local.HabitDao
@@ -19,7 +21,8 @@ import java.util.Calendar
 class HabitLoopRepositoryImp(
     private val habitDao: HabitDao,
     private val firestore: FirebaseFirestore,
-    private val auth: FirebaseAuth
+    private val auth: FirebaseAuth,
+    private val context: Context
 ) : HabitLoopRepository {
 
     private val userId: String?
@@ -75,59 +78,95 @@ class HabitLoopRepositoryImp(
 
     override suspend fun getHabitStats(): Map<String, Int> {
         val habits = habitDao.getHabits().first()
-        val totalHabits = habits.size
-        var currentStreak = 0
-        var longestStreak = 0
-
-        if (habits.isNotEmpty()) {
-            val completedHabits = habits.count { it.isCompleted }
-            val completionRate = if (totalHabits > 0) (completedHabits * 100) / totalHabits else 0
-
-            val sortedHabits = habits.sortedByDescending { it.lastCompletedDate }
-            var currentStreakCount = 0
-            var longestStreakCount = 0
-            var lastDate: Calendar? = null
-
-            for (habit in sortedHabits) {
-                if (habit.isCompleted) {
-                    val completedCal = Calendar.getInstance().apply { timeInMillis = habit.lastCompletedDate }
-                    if (lastDate == null || isConsecutiveDay(completedCal, lastDate)) {
-                        currentStreakCount++
-                    } else {
-                        if (currentStreakCount > longestStreakCount) {
-                            longestStreakCount = currentStreakCount
-                        }
-                        currentStreakCount = 1
-                    }
-                    lastDate = completedCal
-                }
-            }
-
-            if (currentStreakCount > longestStreakCount) {
-                longestStreakCount = currentStreakCount
-            }
-            currentStreak = currentStreakCount
-            longestStreak = longestStreakCount
-
+        if (habits.isEmpty()) {
             return mapOf(
-                "totalHabits" to totalHabits,
-                "currentStreak" to currentStreak,
-                "longestStreak" to longestStreak,
-                "completionRate" to completionRate
+                "totalHabits" to 0,
+                "currentStreak" to 0,
+                "longestStreak" to 0,
+                "completionRate" to 0
             )
         }
 
+        val totalHabits = habits.size
+        val completedOnceCount = habits.count { it.lastCompletedDate > 0 }
+        val completionRate = if (totalHabits > 0) (completedOnceCount * 100) / totalHabits else 0
+
+        val completionDays = habits
+            .filter { it.lastCompletedDate > 0 }
+            .map { habit ->
+                Calendar.getInstance().apply { timeInMillis = habit.lastCompletedDate }
+            }
+            .map { cal -> cal.get(Calendar.YEAR) * 1000 + cal.get(Calendar.DAY_OF_YEAR) } // Create a unique day identifier
+            .toSet()
+            .sorted()
+
+        var longestStreak = 0
+        var currentStreak = 0
+
+        if (completionDays.isNotEmpty()) {
+            var currentStreakLength = 0
+            if (completionDays.isNotEmpty()) {
+                longestStreak = 1
+                currentStreakLength = 1
+                for (i in 1 until completionDays.size) {
+                    if (completionDays[i] == completionDays[i - 1] + 1) {
+                        currentStreakLength++
+                    } else {
+                        currentStreakLength = 1
+                    }
+                    if (currentStreakLength > longestStreak) {
+                        longestStreak = currentStreakLength
+                    }
+                }
+            }
+
+            val today = Calendar.getInstance()
+            val todayIdentifier = today.get(Calendar.YEAR) * 1000 + today.get(Calendar.DAY_OF_YEAR)
+            var dayToCheck = todayIdentifier
+            var streak = 0
+            while (completionDays.contains(dayToCheck)) {
+                streak++
+                dayToCheck--
+            }
+            currentStreak = streak
+        }
+
         return mapOf(
-            "totalHabits" to 0,
-            "currentStreak" to 0,
-            "longestStreak" to 0,
-            "completionRate" to 0
+            "totalHabits" to totalHabits,
+            "currentStreak" to currentStreak,
+            "longestStreak" to longestStreak,
+            "completionRate" to completionRate
         )
     }
 
-    private fun isConsecutiveDay(day1: Calendar, day2: Calendar): Boolean {
-        return day1.get(Calendar.YEAR) == day2.get(Calendar.YEAR) &&
-                day1.get(Calendar.DAY_OF_YEAR) == day2.get(Calendar.DAY_OF_YEAR) - 1
+    override suspend fun backupHabits() {
+        userId?.let {
+            val habits = habitDao.getHabits().first()
+            for (habit in habits) {
+                firestore.collection(USERS_COLLECTION).document(it)
+                    .collection(HABITS_COLLECTION).document(habit.id)
+                    .set(habit).await()
+            }
+            Toast.makeText(context, "Backup successful", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    override suspend fun restoreHabits() {
+        syncWithFirebase()
+        Toast.makeText(context, "Restore successful", Toast.LENGTH_SHORT).show()
+    }
+
+    override suspend fun clearHabits() {
+        habitDao.clearHabits()
+        userId?.let { uid ->
+            val habitsCollection = firestore.collection(USERS_COLLECTION).document(uid)
+                .collection(HABITS_COLLECTION)
+            val snapshot = habitsCollection.get().await()
+            for (document in snapshot.documents) {
+                habitsCollection.document(document.id).delete().await()
+            }
+        }
+        Toast.makeText(context, "Cache cleared", Toast.LENGTH_SHORT).show()
     }
 
     companion object {

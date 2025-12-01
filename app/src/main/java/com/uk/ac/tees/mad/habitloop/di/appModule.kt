@@ -20,6 +20,7 @@ import com.uk.ac.tees.mad.habitloop.presentation.auth.forgot.ForgotViewModel
 import com.uk.ac.tees.mad.habitloop.presentation.auth.login.LoginViewModel
 import com.uk.ac.tees.mad.habitloop.presentation.dashboard.DashboardViewModel
 import com.uk.ac.tees.mad.habitloop.presentation.profile.ProfileViewModel
+import com.uk.ac.tees.mad.habitloop.presentation.setting.SettingViewModel
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.storage.Storage
@@ -85,7 +86,7 @@ val appModule = module {
     single { get<HabitLoopDatabase>().userDao() }
 
     // Repositories
-    single<HabitLoopRepository> { HabitLoopRepositoryImp(get(), get(), get()) }
+    single<HabitLoopRepository> { HabitLoopRepositoryImp(get(), get(), get(), androidContext()) }
     single<AuthRepository> { AuthRepositoryImpl(get(), get(), get(), get()) }
     single<QuoteRepository> { QuoteRepositoryImp(get(), get()) }
     single<SupabaseStorageRepository> { SupabaseStorageRepositoryImpl(get()) }
@@ -99,5 +100,6 @@ val appModule = module {
     viewModel { CreateAccountViewModel(get()) }
     viewModel { ForgotViewModel(get()) }
     viewModel { LoginViewModel(get()) }
-    viewModel { ProfileViewModel(get(), get(), get(named("IODispatcher"))) }
+    viewModel { ProfileViewModel(get(), get(), get(), get(), get(named("IODispatcher"))) }
+    viewModel { SettingViewModel(get(), get(), get(named("IODispatcher"))) }
 }

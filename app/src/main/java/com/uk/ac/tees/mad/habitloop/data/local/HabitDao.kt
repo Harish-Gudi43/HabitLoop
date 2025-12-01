@@ -18,5 +18,5 @@ interface HabitDao {
     fun getHabits(): Flow<List<HabitEntity>>
 
     @Query("DELETE FROM habits")
-    suspend fun clear()
+    suspend fun clearHabits()
 }

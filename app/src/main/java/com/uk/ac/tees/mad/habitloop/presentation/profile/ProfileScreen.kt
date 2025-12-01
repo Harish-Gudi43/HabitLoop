@@ -128,6 +128,21 @@ fun ProfileScreen(
                 }
             )
             Spacer(Modifier.height(24.dp))
+            if (state.motivationalQuote.isNotEmpty()) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = state.motivationalQuote,
+                            style = MaterialTheme.typography.bodyLarge,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+                Spacer(Modifier.height(24.dp))
+            }
             StatsGrid(state = state)
             Spacer(Modifier.height(24.dp))
             WeeklyProgressCard(state.weeklyProgress)

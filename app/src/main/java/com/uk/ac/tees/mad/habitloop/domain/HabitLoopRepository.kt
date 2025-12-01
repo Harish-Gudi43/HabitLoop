@@ -9,4 +9,7 @@ interface HabitLoopRepository {
     fun getHabits(): Flow<List<Habit>>
     suspend fun syncWithFirebase()
     suspend fun getHabitStats(): Map<String, Int>
+    suspend fun backupHabits()
+    suspend fun restoreHabits()
+    suspend fun clearHabits()
 }
