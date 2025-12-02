@@ -2,6 +2,7 @@ package com.uk.ac.tees.mad.habitloop.data.notification
 
 import android.content.Context
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import java.util.concurrent.TimeUnit
@@ -23,5 +24,19 @@ class NotificationScheduler(private val context: Context) {
 
             workManager.enqueue(workRequest)
         }
+    }
+
+    fun scheduleDailyQuoteNotification() {
+        val workRequest = PeriodicWorkRequestBuilder<QuoteNotificationWorker>(1, TimeUnit.DAYS)
+            .build()
+        WorkManager.getInstance(context).enqueue(workRequest)
+    }
+
+    fun cancelAllNotifications() {
+        WorkManager.getInstance(context).cancelAllWork()
+    }
+
+    fun cancelDailyQuoteNotifications() {
+        WorkManager.getInstance(context).cancelAllWorkByTag(QuoteNotificationWorker.TAG)
     }
 }

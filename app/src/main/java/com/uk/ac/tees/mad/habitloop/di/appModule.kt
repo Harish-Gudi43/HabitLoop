@@ -74,7 +74,7 @@ val appModule = module {
     // Room Database
     single {
         Room.databaseBuilder(
-            get(),
+            androidContext(),
             HabitLoopDatabase::class.java,
             "habitloop_db"
         ).fallbackToDestructiveMigration().build()
@@ -86,8 +86,8 @@ val appModule = module {
     single { get<HabitLoopDatabase>().userDao() }
 
     // Repositories
-    single<HabitLoopRepository> { HabitLoopRepositoryImp(get(), get(), get(), androidContext()) }
-    single<AuthRepository> { AuthRepositoryImpl(get(), get(), get(), get()) }
+    single<HabitLoopRepository> { HabitLoopRepositoryImp(get(), get(), get()) }
+    single<AuthRepository> { AuthRepositoryImpl(get(), get(), get(),get()) }
     single<QuoteRepository> { QuoteRepositoryImp(get(), get()) }
     single<SupabaseStorageRepository> { SupabaseStorageRepositoryImpl(get()) }
 
@@ -101,5 +101,5 @@ val appModule = module {
     viewModel { ForgotViewModel(get()) }
     viewModel { LoginViewModel(get()) }
     viewModel { ProfileViewModel(get(), get(), get(), get(), get(named("IODispatcher"))) }
-    viewModel { SettingViewModel(get(), get(), get(named("IODispatcher"))) }
+    viewModel { SettingViewModel(get(), get(), get(), get(named("IODispatcher"))) }
 }

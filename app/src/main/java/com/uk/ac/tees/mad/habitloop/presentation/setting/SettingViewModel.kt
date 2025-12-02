@@ -2,11 +2,15 @@ package com.uk.ac.tees.mad.habitloop.presentation.setting
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.uk.ac.tees.mad.habitloop.data.notification.NotificationScheduler
 import com.uk.ac.tees.mad.habitloop.domain.AuthRepository
 import com.uk.ac.tees.mad.habitloop.domain.HabitLoopRepository
+import com.uk.ac.tees.mad.habitloop.domain.util.Result
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
@@ -16,6 +20,7 @@ import kotlinx.coroutines.launch
 class SettingViewModel(
     private val authRepository: AuthRepository,
     private val habitLoopRepository: HabitLoopRepository,
+    private val notificationScheduler: NotificationScheduler,
     private val ioDispatcher: CoroutineDispatcher
 ) : ViewModel() {
 
@@ -27,14 +32,15 @@ class SettingViewModel(
             initialValue = SettingState()
         )
 
+    private val _toastEvent = MutableSharedFlow<String>()
+    val toastEvent = _toastEvent.asSharedFlow()
+
     init {
         viewModelScope.launch(ioDispatcher) {
             authRepository.getCurrentUser().collectLatest { user ->
                 user?.let {
                     _state.update {
                         it.copy(
-                            isBiometricSecurityOn = user.isBiometricSecurityOn,
-                            isPinSecurityOn = user.isPinSecurityOn,
                             isNotificationSoundOn = user.isNotificationSoundOn,
                             isNotificationVibrationOn = user.isNotificationVibrationOn,
                             notificationFrequency = user.notificationFrequency,
@@ -48,14 +54,17 @@ class SettingViewModel(
 
     fun onAction(action: SettingAction) {
         when (action) {
-            // Security
-            is SettingAction.OnBiometricSecurityToggle -> _state.update { it.copy(isBiometricSecurityOn = action.isEnabled) }
-            is SettingAction.OnPinSecurityToggle -> _state.update { it.copy(isPinSecurityOn = action.isEnabled) }
-
             // Notifications
             is SettingAction.OnNotificationSoundToggle -> _state.update { it.copy(isNotificationSoundOn = action.isEnabled) }
             is SettingAction.OnNotificationVibrationToggle -> _state.update { it.copy(isNotificationVibrationOn = action.isEnabled) }
-            is SettingAction.OnDailyQuoteNotificationsToggle -> _state.update { it.copy(isDailyQuoteNotificationsOn = action.isEnabled) }
+            is SettingAction.OnDailyQuoteNotificationsToggle -> {
+                _state.update { it.copy(isDailyQuoteNotificationsOn = action.isEnabled) }
+                if (action.isEnabled) {
+                    notificationScheduler.scheduleDailyQuoteNotification()
+                } else {
+                    notificationScheduler.cancelDailyQuoteNotifications()
+                }
+            }
             SettingAction.OnNotificationFrequencyClick -> { /* TODO: Show dialog to change frequency */ }
 
             // Data Management
@@ -80,25 +89,32 @@ class SettingViewModel(
 
     private fun backupData() {
         viewModelScope.launch(ioDispatcher) {
-            habitLoopRepository.backupHabits()
+            when (habitLoopRepository.backupHabits()) {
+                is Result.Success -> _toastEvent.emit("Backup successful")
+                is Result.Error -> _toastEvent.emit("Backup failed")
+            }
         }
     }
 
     private fun restoreData() {
         viewModelScope.launch(ioDispatcher) {
-            habitLoopRepository.restoreHabits()
+            when (habitLoopRepository.restoreHabits()) {
+                is Result.Success -> _toastEvent.emit("Restore successful")
+                is Result.Error -> _toastEvent.emit("Restore failed")
+            }
         }
     }
 
     private fun clearCache() {
         viewModelScope.launch(ioDispatcher) {
-            habitLoopRepository.clearHabits()
+            when (habitLoopRepository.clearHabits()) {
+                is Result.Success -> _toastEvent.emit("Cache cleared")
+                is Result.Error -> _toastEvent.emit("Failed to clear cache")
+            }
         }
     }
 
     private fun SettingState.toDomain(user: com.uk.ac.tees.mad.habitloop.domain.models.User) = user.copy(
-        isBiometricSecurityOn = isBiometricSecurityOn,
-        isPinSecurityOn = isPinSecurityOn,
         isNotificationSoundOn = isNotificationSoundOn,
         isNotificationVibrationOn = isNotificationVibrationOn,
         notificationFrequency = notificationFrequency,

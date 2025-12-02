@@ -1,7 +1,5 @@
 package com.uk.ac.tees.mad.habitloop.data
 
-import android.content.Context
-import android.widget.Toast
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.uk.ac.tees.mad.habitloop.data.local.HabitDao
@@ -9,6 +7,9 @@ import com.uk.ac.tees.mad.habitloop.data.mapper.toDomain
 import com.uk.ac.tees.mad.habitloop.data.mapper.toEntity
 import com.uk.ac.tees.mad.habitloop.domain.HabitLoopRepository
 import com.uk.ac.tees.mad.habitloop.domain.models.Habit
+import com.uk.ac.tees.mad.habitloop.domain.util.DataError
+import com.uk.ac.tees.mad.habitloop.domain.util.EmptyResult
+import com.uk.ac.tees.mad.habitloop.domain.util.firebaseResult
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -21,8 +22,7 @@ import java.util.Calendar
 class HabitLoopRepositoryImp(
     private val habitDao: HabitDao,
     private val firestore: FirebaseFirestore,
-    private val auth: FirebaseAuth,
-    private val context: Context
+    private val auth: FirebaseAuth
 ) : HabitLoopRepository {
 
     private val userId: String?
@@ -139,7 +139,7 @@ class HabitLoopRepositoryImp(
         )
     }
 
-    override suspend fun backupHabits() {
+   override suspend fun backupHabits(): EmptyResult<DataError.Firebase> = firebaseResult {
         userId?.let {
             val habits = habitDao.getHabits().first()
             for (habit in habits) {
@@ -147,16 +147,14 @@ class HabitLoopRepositoryImp(
                     .collection(HABITS_COLLECTION).document(habit.id)
                     .set(habit).await()
             }
-            Toast.makeText(context, "Backup successful", Toast.LENGTH_SHORT).show()
         }
     }
 
-    override suspend fun restoreHabits() {
+    override suspend fun restoreHabits(): EmptyResult<DataError.Firebase> = firebaseResult {
         syncWithFirebase()
-        Toast.makeText(context, "Restore successful", Toast.LENGTH_SHORT).show()
     }
 
-    override suspend fun clearHabits() {
+    override suspend fun clearHabits(): EmptyResult<DataError.Firebase> = firebaseResult {
         habitDao.clearHabits()
         userId?.let { uid ->
             val habitsCollection = firestore.collection(USERS_COLLECTION).document(uid)
@@ -166,8 +164,8 @@ class HabitLoopRepositoryImp(
                 habitsCollection.document(document.id).delete().await()
             }
         }
-        Toast.makeText(context, "Cache cleared", Toast.LENGTH_SHORT).show()
     }
+
 
     companion object {
         private const val USERS_COLLECTION = "users"
